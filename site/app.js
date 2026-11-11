@@ -3,6 +3,7 @@
 const tokenStore = makeStore("album_token");
 const app = document.getElementById("app");
 document.title = CONFIG.title;
+document.body.classList.add("journal");
 
 let albums = [];
 let slideshow = null;
@@ -79,55 +80,104 @@ async function showAlbum(token) {
   const { album, photos } = data;
   document.title = `${album.title} · ${CONFIG.title}`;
   const highlights = photos.filter((p) => p.highlight);
+  const cover = photos.find((p) => p.id === album.coverId) || highlights[0] || photos[0];
 
-  const intro = el(
+  const openPhoto = (p) => {
+    slideshow.go(photos.indexOf(p));
+    slideshow.enterFullscreen();
+  };
+
+  // Forside: stort bilde med tittel og datoer
+  const hero = el(
     "section",
-    { class: "album-intro" },
-    el("p", { class: "eyebrow" }, [formatDate(album.date), `${photos.length} bilder`].filter(Boolean).join(" · ")),
-    el("h1", { class: "album-title" }, album.title),
-    album.description ? el("p", { class: "album-desc" }, album.description) : null,
+    { class: `hero${cover ? "" : " hero--plain"}` },
+    cover ? el("img", { class: "hero-img", src: cover.src, alt: "", fetchpriority: "high" }) : null,
+    el(
+      "div",
+      { class: "hero-text" },
+      el("p", { class: "hero-dates hand" }, formatDateRange(album.date, album.dateEnd)),
+      el("h1", { class: "hero-title" }, album.title),
+      el("p", { class: "hero-count" }, `${photos.length} bilder`),
+    ),
   );
 
-  const slideSection = el(
-    "section",
-    { class: "section", id: "lysbilder" },
-    el("h2", { class: "section-title" }, "Alle bilder"),
-  );
+  main.replaceChildren(hero);
+  if (album.description) main.append(el("p", { class: "album-desc" }, album.description));
 
-  main.replaceChildren(intro);
-
+  // Høydepunkter: én rad per bilde, annenhver side, med tekst ved siden av
   if (highlights.length) {
-    const grid = el("div", { class: "justified" });
-    for (const p of highlights) {
-      const ratio = p.w && p.h ? p.w / p.h : 1.5;
-      grid.append(
+    const list = el("div", { class: "stories" });
+    highlights.forEach((p, i) => {
+      const hasText = p.title || p.story;
+      const portrait = p.w && p.h && p.h > p.w;
+      list.append(
         el(
-          "button",
-          {
-            class: "justified-item",
-            style: `--r:${ratio.toFixed(3)}`,
-            "aria-label": p.caption || "Åpne bilde",
-            onclick: () => {
-              slideshow.go(photos.indexOf(p));
-              slideshow.enterFullscreen();
-            },
-          },
-          el("img", { src: p.thumb, alt: p.caption || "", loading: "lazy", decoding: "async" }),
-          p.caption ? el("span", { class: "justified-caption" }, p.caption) : null,
+          "article",
+          { class: `story${i % 2 ? " story--flip" : ""}${hasText ? "" : " story--solo"}${portrait ? " story--portrait" : ""}` },
+          el(
+            "button",
+            { class: "polaroid", style: `--tilt:${tilt(i)}deg`, "aria-label": p.title || p.caption || "Åpne bilde", onclick: () => openPhoto(p) },
+            el("img", {
+              src: p.src,
+              alt: p.caption || p.title || "",
+              loading: "lazy",
+              decoding: "async",
+              width: p.w || null,
+              height: p.h || null,
+            }),
+            p.caption ? el("span", { class: "polaroid-caption hand" }, p.caption) : null,
+          ),
+          hasText
+            ? el(
+                "div",
+                { class: "story-text" },
+                p.title ? el("h2", { class: "story-title hand" }, p.title) : null,
+                ...(p.story || "")
+                  .split(/\n{2,}/)
+                  .filter((s) => s.trim())
+                  .map((s) => el("p", {}, s.trim())),
+              )
+            : null,
         ),
       );
-    }
-    grid.append(el("span", { class: "justified-filler" }));
-    main.append(el("section", { class: "section" }, el("h2", { class: "section-title" }, "Høydepunkter"), grid));
+    });
+    main.append(el("section", { class: "section" }, el("h2", { class: "section-title hand" }, "Høydepunkter"), list));
+    revealOnScroll(list.children);
   }
 
   if (photos.length) {
+    const slideSection = el("section", { class: "section", id: "lysbilder" }, el("h2", { class: "section-title hand" }, "Alle bilder"));
     main.append(slideSection);
     slideshow = createSlideshow(slideSection, photos);
   } else {
     main.append(el("p", { class: "muted center" }, "Dette albumet har ingen bilder ennå."));
   }
   window.scrollTo(0, 0);
+}
+
+/** Litt tilfeldig, men stabil, helning på polaroidene. */
+function tilt(i) {
+  const tilts = [-2.2, 1.8, -1.2, 2.4, -1.8, 1.1];
+  return tilts[i % tilts.length];
+}
+
+function revealOnScroll(nodes) {
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          e.target.classList.add("is-visible");
+          io.unobserve(e.target);
+        }
+      }
+    },
+    { rootMargin: "0px 0px -10% 0px" },
+  );
+  for (const n of nodes) {
+    n.classList.add("reveal");
+    io.observe(n);
+  }
 }
 
 function renderHeader(activeId) {
@@ -149,7 +199,7 @@ function renderHeader(activeId) {
           "a",
           { href: `#/${a.id}`, class: `menu-item${a.id === activeId ? " is-active" : ""}`, onclick: () => closeMenu() },
           a.cover ? el("img", { src: a.cover, alt: "", loading: "lazy" }) : el("span", { class: "menu-thumb-empty" }, icon("image")),
-          el("span", { class: "menu-item-text" }, el("strong", {}, a.title), el("small", {}, formatDate(a.date))),
+          el("span", { class: "menu-item-text" }, el("strong", {}, a.title), el("small", {}, formatDateRange(a.date, a.dateEnd))),
         ),
       );
     }

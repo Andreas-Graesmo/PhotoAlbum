@@ -182,6 +182,7 @@ async function createAlbum(request, env) {
     id: `${slugify(title)}-${randomId(4)}`,
     title,
     date: cleanDate(body.date) || new Date().toISOString().slice(0, 10),
+    dateEnd: cleanDate(body.dateEnd),
     description: cleanText(body.description, 2000),
     hidden: body.hidden !== false, // nye album er skjult til du publiserer dem
     coverId: null,
@@ -207,6 +208,7 @@ async function updateAlbum(request, env, albumId) {
       album.title = t;
     }
     if ("date" in body) album.date = cleanDate(body.date) || album.date;
+    if ("dateEnd" in body) album.dateEnd = cleanDate(body.dateEnd);
     if ("description" in body) album.description = cleanText(body.description, 2000);
     if ("hidden" in body) album.hidden = !!body.hidden;
     if ("coverId" in body) album.coverId = body.coverId ? checkId(body.coverId) : null;
@@ -303,6 +305,8 @@ async function updatePhoto(request, env, albumId, photoId) {
     if (!p) throw new HttpError(404, "Bildet finnes ikke");
     if ("highlight" in body) p.highlight = !!body.highlight;
     if ("caption" in body) p.caption = cleanText(body.caption, 500);
+    if ("title" in body) p.title = cleanText(body.title, 120);
+    if ("story" in body) p.story = cleanText(body.story, 4000);
     updated = p;
   });
   return json({ photo: updated });

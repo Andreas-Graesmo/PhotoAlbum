@@ -836,3 +836,381 @@ label {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 }
+
+/* ================================================================
+   Reisedagbok – tema for albumsiden (body.journal)
+   ================================================================ */
+
+body.journal {
+  --bg: #f5eddf;
+  --surface: #fbf6ec;
+  --surface-2: #efe3cf;
+  --border: rgba(74, 52, 30, 0.14);
+  --text: #3a2c20;
+  --muted: #7d6a57;
+  --accent: #b9572a;
+  --accent-ink: #fff8ef;
+  --sea: #2c7a80;
+  --hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+  color-scheme: light;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(rgba(120, 90, 50, 0.07) 1px, transparent 1px),
+    radial-gradient(rgba(120, 90, 50, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px, 37px 37px;
+  background-position: 0 0, 11px 17px;
+}
+
+.journal .hand {
+  font-family: var(--hand);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.journal .btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.journal .btn-primary:hover {
+  background: #a84d23;
+  border-color: #a84d23;
+}
+.journal .btn-icon:hover {
+  background: rgba(74, 52, 30, 0.08);
+}
+
+/* Innlogging */
+.journal .login-wrap {
+  background: transparent;
+}
+.journal .login-card {
+  position: relative;
+  background: #fffdf8;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(58, 44, 32, 0.12), 0 12px 30px rgba(58, 44, 32, 0.14);
+  transform: rotate(-1deg);
+}
+.journal .login-card::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 110px;
+  height: 26px;
+  translate: -50% 0;
+  rotate: 2deg;
+  background: rgba(214, 190, 140, 0.6);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.journal .login-card h1 {
+  font-family: var(--hand);
+  font-size: 44px;
+  font-weight: 700;
+}
+
+/* Toppmeny */
+.journal .site-header {
+  background: rgba(245, 237, 223, 0.88);
+}
+.journal .brand {
+  font-family: var(--hand);
+  font-size: 26px;
+  font-weight: 700;
+}
+.journal .album-menu-toggle {
+  background: #fffdf8;
+}
+.journal .album-menu-panel {
+  background: #fffdf8;
+  box-shadow: 0 16px 40px rgba(58, 44, 32, 0.18);
+}
+.journal .menu-item.is-active {
+  background: rgba(185, 87, 42, 0.1);
+}
+
+/* Forside */
+.journal .album {
+  max-width: 1200px;
+}
+.hero {
+  position: relative;
+  margin: 20px 0 0;
+  height: min(78vh, 760px);
+  min-height: 360px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: 0 2px 4px rgba(58, 44, 32, 0.1), 0 20px 50px rgba(58, 44, 32, 0.18);
+}
+.hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: hero-zoom 18s ease-out both;
+}
+@keyframes hero-zoom {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(30, 20, 10, 0.72) 0%, rgba(30, 20, 10, 0.2) 45%, transparent 70%);
+}
+.hero-text {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  padding: clamp(20px, 5vw, 56px);
+  color: #fff8ef;
+}
+.hero-dates {
+  margin: 0 0 4px;
+  font-size: clamp(22px, 3vw, 30px);
+  color: #ffd9a8;
+}
+.hero-title {
+  margin: 0;
+  font: 400 clamp(40px, 8vw, 92px) / 1 var(--serif);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.25);
+}
+.hero-count {
+  margin: 12px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.hero--plain {
+  height: auto;
+  min-height: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+}
+.hero--plain::after {
+  display: none;
+}
+.hero--plain .hero-text {
+  position: static;
+  color: var(--text);
+}
+.hero--plain .hero-dates {
+  color: var(--accent);
+}
+
+.journal .album-desc {
+  max-width: 640px;
+  margin: clamp(32px, 6vw, 64px) auto 0;
+  text-align: center;
+  font: italic 400 clamp(18px, 2.2vw, 22px) / 1.6 var(--serif);
+  color: var(--text);
+}
+
+.journal .section {
+  margin-top: clamp(48px, 8vw, 96px);
+}
+.journal .section-title {
+  margin: 0 0 clamp(24px, 4vw, 48px);
+  text-align: center;
+  font-size: clamp(36px, 5vw, 52px);
+  color: var(--accent);
+}
+
+/* Høydepunkter: annenhver side */
+.stories {
+  display: grid;
+  gap: clamp(48px, 9vw, 120px);
+}
+.story {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 72px);
+}
+.story--portrait {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+}
+.story--flip .polaroid {
+  order: 2;
+}
+.story--solo {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+.story--solo .polaroid {
+  max-width: min(760px, 100%);
+}
+.story--solo.story--portrait .polaroid {
+  max-width: min(400px, 100%);
+}
+
+.polaroid {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 14px 18px;
+  border: 0;
+  background: #fffdf8;
+  box-shadow: 0 1px 3px rgba(58, 44, 32, 0.15), 0 14px 34px rgba(58, 44, 32, 0.16);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  cursor: zoom-in;
+}
+.polaroid:hover {
+  transform: rotate(0deg) scale(1.015);
+  box-shadow: 0 2px 4px rgba(58, 44, 32, 0.15), 0 22px 46px rgba(58, 44, 32, 0.2);
+}
+.polaroid::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: -13px;
+  left: 50%;
+  width: 34%;
+  max-width: 130px;
+  height: 28px;
+  translate: -50% 0;
+  rotate: calc(var(--tilt, 0deg) * -1.6);
+  background: rgba(214, 190, 140, 0.55);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.polaroid img {
+  width: 100%;
+  height: auto;
+  background: var(--surface-2);
+}
+.polaroid-caption {
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--text);
+  text-align: center;
+}
+
+.story-text {
+  max-width: 460px;
+}
+.story--flip .story-text {
+  justify-self: end;
+}
+.story-title {
+  margin: 0 0 12px;
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1.1;
+  color: var(--sea);
+}
+.story-text p {
+  margin: 0 0 14px;
+  font: 400 17px/1.75 var(--serif);
+  color: var(--text);
+}
+
+.reveal {
+  opacity: 0;
+  translate: 0 40px;
+  transition: opacity 0.8s ease, translate 0.8s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@media (max-width: 720px) {
+  .story,
+  .story--portrait {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .story--flip .polaroid {
+    order: 0;
+  }
+  .story--flip .story-text {
+    justify-self: start;
+  }
+  .story--portrait .polaroid {
+    max-width: 420px;
+    justify-self: center;
+  }
+  .polaroid {
+    padding: 10px 10px 14px;
+  }
+  .hero {
+    margin-top: 12px;
+    height: 70vh;
+  }
+}
+
+/* Lysbildefremvisning i dagbok-stil */
+.journal .stage {
+  background: #2b2119;
+  border-radius: 6px;
+}
+.journal .stage-counter {
+  font-family: var(--hand);
+  font-size: 22px;
+  font-weight: 700;
+}
+.journal .stage-caption {
+  font-family: var(--hand);
+  font-size: 24px;
+  font-weight: 700;
+}
+.journal .thumb {
+  background: var(--surface-2);
+}
+.journal .slideshow:fullscreen .stage-counter,
+.journal .slideshow:fullscreen .stage-caption,
+.journal .slideshow.pseudo-fullscreen .stage-counter,
+.journal .slideshow.pseudo-fullscreen .stage-caption,
+.journal .slideshow:fullscreen .btn-icon,
+.journal .slideshow.pseudo-fullscreen .btn-icon {
+  color: #f5eddf;
+}
+.journal .empty-state h1 {
+  font-family: var(--hand);
+  font-size: 40px;
+}
+
+/* Admin: tekst til høydepunkter */
+.story-editor-list {
+  display: grid;
+  gap: 14px;
+}
+.story-editor {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.story-editor img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.story-editor-fields {
+  display: grid;
+  gap: 10px;
+}
+.story-editor textarea {
+  min-height: 110px;
+}
+@media (max-width: 560px) {
+  .story-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

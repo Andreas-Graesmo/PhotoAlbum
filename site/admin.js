@@ -164,6 +164,7 @@ async function openAlbum(id) {
 function renderAlbum(album) {
   const title = el("input", { type: "text", value: album.title, maxlength: "120" });
   const date = el("input", { type: "date", value: album.date || "" });
+  const dateEnd = el("input", { type: "date", value: album.dateEnd || "" });
   const desc = el("textarea", { maxlength: "2000", placeholder: "Kort tekst som vises øverst i albumet (valgfritt)" }, album.description || "");
   const published = el("input", { type: "checkbox", checked: !album.hidden });
   const status = el("span", { class: "save-status", role: "status" });
@@ -173,7 +174,7 @@ function renderAlbum(album) {
     try {
       await call(`/api/admin/albums/${album.id}`, {
         method: "PATCH",
-        body: { title: title.value, date: date.value, description: desc.value, hidden: !published.checked },
+        body: { title: title.value, date: date.value, dateEnd: dateEnd.value, description: desc.value, hidden: !published.checked },
       });
       await refreshAlbums();
       renderSidebar();
@@ -196,9 +197,10 @@ function renderAlbum(album) {
     el(
       "div",
       { class: "form-grid" },
-      el("label", {}, "Navn", title),
-      el("label", {}, "Dato", date),
-      el("label", { class: "span-2" }, "Beskrivelse", desc),
+      el("label", { class: "span-2" }, "Navn", title),
+      el("label", {}, "Fra dato", date),
+      el("label", {}, "Til dato (valgfritt)", dateEnd),
+      el("label", { class: "span-2" }, "Innledning", desc),
       el(
         "div",
         { class: "row span-2" },
@@ -251,14 +253,68 @@ function renderAlbum(album) {
     grid,
   );
 
-  main.replaceChildren(settings, uploadPanel(album, () => drawGrid()), photosPanel);
+  const storyList = el("div", { class: "story-editor-list" });
+  const storiesPanel = el(
+    "div",
+    { class: "panel" },
+    el("div", { class: "panel-head" }, el("h2", {}, "Tekst til høydepunktene")),
+    el(
+      "p",
+      { class: "muted" },
+      "Høydepunktene vises nedover albumet, annenhver side, med teksten ved siden av. La feltene stå tomme hvis du bare vil vise bildet. Tom linje gir nytt avsnitt.",
+    ),
+    storyList,
+  );
+
+  main.replaceChildren(settings, uploadPanel(album, () => drawGrid()), photosPanel, storiesPanel);
   drawGrid();
 
   function drawGrid() {
-    highlightCount.textContent = `${photos.filter((p) => p.highlight).length} høydepunkter · ${photos.length} bilder`;
+    const highlights = photos.filter((p) => p.highlight);
+    highlightCount.textContent = `${highlights.length} høydepunkter · ${photos.length} bilder`;
     grid.replaceChildren(...photos.map((p) => photoCard(album, p, drawGrid)));
     if (!photos.length) grid.append(el("p", { class: "muted" }, "Ingen bilder ennå."));
+    storyList.replaceChildren(...highlights.map((p) => storyEditor(album, p)));
+    if (!highlights.length) storyList.append(el("p", { class: "muted" }, "Marker bilder med ⭐ for å skrive tekst til dem."));
   }
+}
+
+function storyEditor(album, p) {
+  const status = el("span", { class: "save-status", role: "status" });
+  const save = (field) => async (e) => {
+    const value = e.target.value;
+    status.textContent = "Lagrer …";
+    try {
+      await call(`/api/admin/albums/${album.id}/photos/${p.id}`, { method: "PATCH", body: { [field]: value } });
+      p[field] = value;
+      status.textContent = "Lagret ✓";
+    } catch (err) {
+      status.textContent = "";
+      alert(err.message);
+    }
+  };
+  return el(
+    "div",
+    { class: "story-editor" },
+    el("img", { src: p.thumb, alt: "", loading: "lazy" }),
+    el(
+      "div",
+      { class: "story-editor-fields" },
+      el(
+        "label",
+        {},
+        "Overskrift",
+        el("input", { type: "text", value: p.title || "", maxlength: "120", placeholder: "Dag 3 · Krabi", onchange: save("title") }),
+      ),
+      el(
+        "label",
+        {},
+        "Tekst",
+        el("textarea", { maxlength: "4000", placeholder: "Hva skjedde denne dagen?", onchange: save("story") }, p.story || ""),
+      ),
+      el("div", { class: "row" }, el("span", { class: "muted", style: "font-size:12px" }, "Lagres automatisk når du går ut av feltet"), el("span", { class: "spacer" }), status),
+    ),
+  );
 }
 
 function photoCard(album, p, redraw) {
@@ -307,7 +363,7 @@ function photoCard(album, p, redraw) {
   const caption = el("input", {
     type: "text",
     value: p.caption || "",
-    placeholder: "Bildetekst",
+    placeholder: "Bildetekst (kort)",
     maxlength: "500",
     onchange: async (e) => {
       try {

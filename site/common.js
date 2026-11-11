@@ -105,6 +105,21 @@ function formatDate(iso) {
   return d.toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric" });
 }
 
+/** «3.–17. november 2026», «28. oktober – 5. november 2026» eller «28. des. 2025 – 3. jan. 2026». */
+function formatDateRange(from, to) {
+  if (!to || to <= from) return formatDate(from);
+  const a = new Date(`${from}T12:00:00`);
+  const b = new Date(`${to}T12:00:00`);
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return formatDate(from);
+  const month = (d) => d.toLocaleDateString("nb-NO", { month: "long" });
+  if (a.getFullYear() !== b.getFullYear()) {
+    const opts = { day: "numeric", month: "short", year: "numeric" };
+    return `${a.toLocaleDateString("nb-NO", opts)} – ${b.toLocaleDateString("nb-NO", opts)}`;
+  }
+  if (a.getMonth() === b.getMonth()) return `${a.getDate()}.–${b.getDate()}. ${month(b)} ${b.getFullYear()}`;
+  return `${a.getDate()}. ${month(a)} – ${b.getDate()}. ${month(b)} ${b.getFullYear()}`;
+}
+
 /** Viser et innloggingsskjema og kaller onLogin(token, role) ved riktig passord. */
 function renderLogin(root, { heading, hint, requireRole, onLogin }) {
   const input = el("input", {
