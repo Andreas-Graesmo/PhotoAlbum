@@ -1,0 +1,4 @@
+# Kopier denne til .dev.vars for lokal testing (filen sjekkes ikke inn i git)
+VIEWER_PASSWORD=familie
+ADMIN_PASSWORD=admin123
+TOKEN_SECRET=bytt-meg-til-en-lang-tilfeldig-streng
