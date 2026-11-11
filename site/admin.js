@@ -425,7 +425,7 @@ function formatTaken(iso) {
 // ---------------------------------------------------------------- opplasting
 
 function uploadPanel(album, onUploaded) {
-  const filesInput = el("input", { type: "file", accept: "image/*", multiple: true, hidden: true });
+  const filesInput = el("input", { type: "file", accept: "image/*,.heic,.heif,.hif", multiple: true, hidden: true });
   const folderInput = el("input", { type: "file", multiple: true, hidden: true, webkitdirectory: true });
   const bar = el("div");
   const progress = el("div", { class: "progress", hidden: true }, bar);
@@ -470,10 +470,17 @@ function uploadPanel(album, onUploaded) {
   let busy = false;
 
   async function handle(files) {
-    const images = files.filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name));
-    if (!images.length || busy) return;
-    busy = true;
+    if (busy) return;
+    const images = files.filter((f) => f.type.startsWith("image/") || IMAGE_EXT.test(f.name));
+    const skipped = files.length - images.length;
     log.replaceChildren();
+    if (!images.length) {
+      info.textContent = files.length
+        ? `Fant ingen bilder å laste opp (${files.length} filer hoppet over). Støttede formater: JPEG, PNG, WebP, HEIC/HEIF/HIF.`
+        : "Fant ingen filer.";
+      return;
+    }
+    busy = true;
     progress.hidden = false;
     let done = 0;
     let failed = 0;
@@ -516,7 +523,9 @@ function uploadPanel(album, onUploaded) {
 
     busy = false;
     progress.hidden = true;
-    info.textContent = failed ? `${done} lastet opp, ${failed} feilet` : `${done} bilder lastet opp ✓`;
+    info.textContent =
+      (failed ? `${done} lastet opp, ${failed} feilet` : `${done} bilder lastet opp ✓`) +
+      (skipped ? ` · ${skipped} andre filer hoppet over` : "");
     refreshAlbums().then(renderSidebar).catch(() => {});
   }
 
@@ -525,12 +534,7 @@ function uploadPanel(album, onUploaded) {
 
 async function uploadOne(album, file) {
   const takenAt = (await readExifDate(file)) || new Date(file.lastModified).toISOString().slice(0, 19);
-  let bitmap;
-  try {
-    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-  } catch {
-    throw new Error(/\.hei[cf]$/i.test(file.name) ? "HEIC støttes ikke i denne nettleseren – bruk JPEG eller prøv Safari" : "Kunne ikke lese bildet");
-  }
+  const bitmap = await decodeImage(file);
   const full = await resize(bitmap, FULL_MAX, 0.85);
   const thumb = await resize(bitmap, THUMB_MAX, 0.78);
   bitmap.close?.();
@@ -541,6 +545,36 @@ async function uploadOne(album, file) {
   form.append("meta", JSON.stringify({ name: file.name, w: full.w, h: full.h, takenAt }));
   const { photo } = await call(`/api/admin/albums/${album.id}/photos`, { method: "POST", body: form });
   return photo;
+}
+
+const IMAGE_EXT = /\.(jpe?g|png|webp|avif|heic|heif|hif)$/i;
+const HEIF_EXT = /\.(heic|heif|hif)$/i;
+const HEIC_LIB_URL = "https://cdn.jsdelivr.net/npm/heic-to@1.6.6/dist/heic-to.js";
+let heicLib = null;
+
+/** Leser et bilde til en bitmap. HEIC/HEIF/HIF (iPhone, Fujifilm, Canon) dekodes med libheif når nettleseren ikke kan selv. */
+async function decodeImage(file) {
+  const isHeif = HEIF_EXT.test(file.name) || /image\/hei[cf]/.test(file.type);
+  try {
+    return await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    if (!isHeif) throw new Error("Kunne ikke lese bildet");
+  }
+  heicLib ??= import(HEIC_LIB_URL).catch((err) => {
+    heicLib = null;
+    throw err;
+  });
+  let lib;
+  try {
+    lib = await heicLib;
+  } catch {
+    throw new Error("Kunne ikke laste HEIF-støtte – sjekk nettforbindelsen");
+  }
+  try {
+    return await lib.heicTo({ blob: file, type: "bitmap" });
+  } catch {
+    throw new Error("Kunne ikke lese HEIF-bildet – eksporter det som JPEG og prøv igjen");
+  }
 }
 
 async function resize(bitmap, max, quality) {

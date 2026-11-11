@@ -79,6 +79,7 @@ npx http-server site -p 8080 -c-1
 
 ## Godt å vite
 
-- **HEIC-bilder fra iPhone:** Bare Safari kan lese dem direkte. I Chrome/Edge får du en feilmelding. Da kan du åpne admin-siden i Safari, eller stille iPhonen inn på «Mest kompatibel» (Innstillinger → Kamera → Formater).
+- **HEIC/HEIF/HIF (iPhone, Fujifilm, Canon):** Støttes. Når nettleseren ikke kan lese formatet selv, gjør admin-siden det om med [heic-to](https://github.com/hoppergee/heic-to) (libheif). Det tar noen sekunder per bilde, så store mapper bruker litt tid.
+- Andre filer i mappen (f.eks. RAW-filer som `.RAF` og videoer) hoppes over.
 - **Endre passord:** Kjør `npx wrangler secret put VIEWER_PASSWORD` på nytt.
 - **Ekstra beskyttelse mot gjetting:** Du kan legge til en regel for rate limiting på `/api/login` i Cloudflare-dashbordet.
