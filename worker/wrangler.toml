@@ -5,7 +5,7 @@ compatibility_date = "2025-06-01"
 # Hvilke nettsider som får lov å snakke med API-et (kommaseparert).
 # Bytt ut med adressen til GitHub Pages-siden din, f.eks. https://brukernavn.github.io
 [vars]
-ALLOWED_ORIGINS = "https://BRUKERNAVN.github.io,http://localhost:8080,http://127.0.0.1:8080"
+ALLOWED_ORIGINS = "https://andreas-graesmo.github.io,http://localhost:8080,http://127.0.0.1:8080"
 
 [[r2_buckets]]
 binding = "PHOTOS"

@@ -4,5 +4,5 @@ window.ALBUM_CONFIG = {
   title: "Fotoalbum",
   apiUrl: ["localhost", "127.0.0.1"].includes(location.hostname)
     ? "http://localhost:8787"
-    : "https://photo-album-api.DITT-KONTO.workers.dev",
+    : "https://photo-album-api.graesmo.workers.dev",
 };
