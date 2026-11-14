@@ -185,6 +185,42 @@ function renderAlbum(album) {
     }
   };
 
+  // Tema: lagres med en gang man velger et
+  THEMES.forEach(loadThemeFonts);
+  const themeStatus = el("span", { class: "save-status", role: "status" });
+  const themeButtons = THEMES.map((t) =>
+    el(
+      "button",
+      { class: "theme-option", type: "button", "aria-pressed": String(themeById(album.theme) === t), onclick: () => pickTheme(t) },
+      el("span", { class: "theme-swatch", dataset: { theme: t.id } }, el("span", { class: "theme-swatch-photo" }), el("span", { class: "theme-swatch-title" }, t.name)),
+      el("span", { class: "theme-option-name" }, t.name),
+    ),
+  );
+  const markTheme = (id) => themeButtons.forEach((b, i) => b.setAttribute("aria-pressed", String(THEMES[i] === themeById(id))));
+  async function pickTheme(t) {
+    const previous = album.theme;
+    markTheme(t.id);
+    themeStatus.textContent = "Lagrer …";
+    try {
+      const res = await call(`/api/admin/albums/${album.id}`, { method: "PATCH", body: { theme: t.id } });
+      // En eldre versjon av API-et kjenner ikke til temaer og lagrer dem ikke
+      if (res.album.theme !== t.id) throw new Error("Temaet ble ikke lagret. API-et (Workeren) må publiseres på nytt først.");
+      album.theme = t.id;
+      themeStatus.textContent = "Lagret ✓";
+    } catch (err) {
+      markTheme(previous);
+      themeStatus.textContent = "";
+      alert(err.message);
+    }
+  }
+  const themePanel = el(
+    "div",
+    { class: "panel" },
+    el("div", { class: "panel-head" }, el("h2", {}, "Tema"), themeStatus),
+    el("p", { class: "muted" }, "Velg utseendet albumet skal ha for de som ser på det. Bildene og tekstene er de samme i alle temaer."),
+    el("div", { class: "theme-picker" }, themeButtons),
+  );
+
   const settings = el(
     "div",
     { class: "panel" },
@@ -249,7 +285,11 @@ function renderAlbum(album) {
         el("button", { class: "btn", onclick: () => sortByTime(album) }, "Sorter etter tidspunkt"),
       ),
     ),
-    el("p", { class: "muted" }, "Trykk på stjernen for å gjøre et bilde til høydepunkt. Dra bildene for å endre rekkefølgen i lysbildefremvisningen."),
+    el(
+      "p",
+      { class: "muted" },
+      "Trykk på et bilde for å se det større. Trykk på stjernen for å gjøre det til høydepunkt, og dra bildene for å endre rekkefølgen i lysbildefremvisningen.",
+    ),
     grid,
   );
 
@@ -266,7 +306,7 @@ function renderAlbum(album) {
     storyList,
   );
 
-  main.replaceChildren(settings, uploadPanel(album, () => drawGrid()), photosPanel, storiesPanel);
+  main.replaceChildren(settings, themePanel, uploadPanel(album, () => drawGrid()), photosPanel, storiesPanel);
   drawGrid();
 
   function drawGrid() {
@@ -296,7 +336,7 @@ function storyEditor(album, p) {
   return el(
     "div",
     { class: "story-editor" },
-    el("img", { src: p.thumb, alt: "", loading: "lazy" }),
+    previewButton(p, el("img", { src: p.thumb, alt: "", loading: "lazy" })),
     el(
       "div",
       { class: "story-editor-fields" },
@@ -398,7 +438,7 @@ function photoCard(album, p, redraw) {
   const card = el(
     "div",
     { class: `photo-card${p.highlight ? " is-highlight" : ""}`, draggable: "true", dataset: { id: p.id } },
-    el("img", { src: p.thumb, alt: p.name || "", loading: "lazy", draggable: "false" }),
+    previewButton(p, el("img", { src: p.thumb, alt: p.name || "", loading: "lazy", draggable: "false" })),
     el("div", { class: "photo-card-tools" }, star, del),
     el(
       "div",
@@ -445,6 +485,97 @@ function photoCard(album, p, redraw) {
   });
 
   return card;
+}
+
+// ---------------------------------------------------------------- forhåndsvisning
+
+/** Gjør et miniatyrbilde trykkbart. Bildet pakkes ikke inn i en knapp, for da kan ikke kortet dras i alle nettlesere. */
+function previewButton(p, img) {
+  img.classList.add("preview-btn");
+  img.tabIndex = 0;
+  img.setAttribute("role", "button");
+  img.title = "Se bildet større";
+  img.addEventListener("click", () => openPreview(p));
+  img.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openPreview(p);
+    }
+  });
+  return img;
+}
+
+/** Viser et bilde stort, med piler for å bla gjennom resten av albumet. */
+function openPreview(start) {
+  const list = photos.slice();
+  let index = Math.max(0, list.indexOf(start));
+  let loadId = 0;
+  const opener = document.activeElement;
+
+  const img = el("img", { class: "preview-img", alt: "" });
+  const info = el("p", { class: "preview-info" });
+  const close = () => {
+    document.removeEventListener("keydown", onKey);
+    document.body.classList.remove("no-scroll");
+    overlay.remove();
+    opener?.focus?.();
+  };
+  const show = (i) => {
+    index = (i + list.length) % list.length;
+    const p = list[index];
+    const id = ++loadId;
+    // Miniatyren vises med en gang, og byttes ut når det store bildet er lastet
+    img.src = p.thumb;
+    img.alt = p.caption || p.name || "";
+    const full = new Image();
+    full.onload = () => {
+      if (id === loadId) img.src = p.src;
+    };
+    full.src = p.src;
+    info.textContent = [`${index + 1} / ${list.length}`, p.caption, formatTaken(p.takenAt), p.highlight ? "Høydepunkt" : ""].filter(Boolean).join(" · ");
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") close();
+    else if (e.key === "ArrowRight") show(index + 1);
+    else if (e.key === "ArrowLeft") show(index - 1);
+  };
+
+  const many = list.length > 1;
+  const overlay = el(
+    "div",
+    {
+      class: "preview",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-label": "Forhåndsvisning",
+      onclick: (e) => {
+        if (e.target === overlay || e.target.classList.contains("preview-stage")) close();
+      },
+    },
+    el("div", { class: "preview-stage" }, img),
+    many ? el("button", { class: "stage-nav prev", type: "button", "aria-label": "Forrige", onclick: () => show(index - 1) }, icon("prev")) : null,
+    many ? el("button", { class: "stage-nav next", type: "button", "aria-label": "Neste", onclick: () => show(index + 1) }, icon("next")) : null,
+    el("button", { class: "btn-icon preview-close", type: "button", "aria-label": "Lukk", onclick: close }, icon("close")),
+    info,
+  );
+
+  // Sveip for å bla på mobil
+  let startX = null;
+  overlay.addEventListener("pointerdown", (e) => {
+    startX = e.pointerType === "mouse" ? null : e.clientX;
+  });
+  overlay.addEventListener("pointerup", (e) => {
+    if (startX == null) return;
+    const dx = e.clientX - startX;
+    startX = null;
+    if (many && Math.abs(dx) > 40) show(index + (dx < 0 ? 1 : -1));
+  });
+
+  document.addEventListener("keydown", onKey);
+  document.body.classList.add("no-scroll");
+  document.body.append(overlay);
+  show(index);
+  overlay.querySelector(".preview-close").focus();
 }
 
 function isAfter(e, node) {

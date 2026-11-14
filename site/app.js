@@ -4,6 +4,7 @@ const tokenStore = makeStore("album_token");
 const app = document.getElementById("app");
 document.title = CONFIG.title;
 document.body.classList.add("journal");
+applyTheme();
 
 let albums = [];
 let slideshow = null;
@@ -18,6 +19,7 @@ function start() {
 }
 
 function showLogin() {
+  applyTheme();
   renderLogin(app, {
     heading: CONFIG.title,
     hint: "Skriv inn passordet for å se bildene.",
@@ -59,6 +61,7 @@ async function showAlbum(token) {
   slideshow?.destroy();
   slideshow = null;
   const albumId = currentAlbumId();
+  applyTheme(albums.find((a) => a.id === albumId)?.theme);
   const header = renderHeader(albumId);
 
   if (!albumId) {

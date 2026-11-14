@@ -59,8 +59,9 @@ Kommandoen skriver ut en adresse som `https://photo-album-api.<konto>.workers.de
 1. Gå til `…/admin.html` og logg inn med admin-passordet.
 2. Lag et album (f.eks. «Sommerferie 2026»).
 3. Trykk **Velg mappe** og velg bildemappen, eller dra mappen inn.
-4. Trykk på ⭐ på bildene som skal være høydepunkter, og dra bildene for å endre rekkefølgen.
-5. Huk av **Publisert** og trykk **Lagre**. Nye album er skjult til du publiserer dem.
+4. Trykk på ⭐ på bildene som skal være høydepunkter, og dra bildene for å endre rekkefølgen. Trykk på et bilde for å se det større.
+5. Velg et **tema** for albumet (Reisedagbok, Storby, Sol og strand, Fjell og hytte, Vinter, Jul, Bryllup og fest, Bursdag, Gamle dager eller Galleri). Temaet lagres med en gang og endrer bare utseendet.
+6. Huk av **Publisert** og trykk **Lagre**. Nye album er skjult til du publiserer dem.
 
 ## Vise bildene på TV
 
@@ -103,5 +104,6 @@ npx http-server site -p 8080 -c-1
 
 - **HEIC/HEIF/HIF (iPhone, Fujifilm, Canon):** Støttes. Når nettleseren ikke kan lese formatet selv, gjør admin-siden det om med [heic-to](https://github.com/hoppergee/heic-to) (libheif). Det tar noen sekunder per bilde, så store mapper bruker litt tid.
 - Andre filer i mappen (f.eks. RAW-filer som `.RAF` og videoer) hoppes over.
+- **Nytt tema:** Legg til en linje i `THEMES` i `site/common.js` og en blokk med `[data-theme="<id>"]` nederst i `site/styles.css`. Et tema er i hovedsak et sett variabler (farger, skrifter, bakgrunnsmønster).
 - **Endre passord:** Kjør `npx wrangler secret put VIEWER_PASSWORD` på nytt.
 - **Ekstra beskyttelse mot gjetting:** Du kan legge til en regel for rate limiting på `/api/login` i Cloudflare-dashbordet.
