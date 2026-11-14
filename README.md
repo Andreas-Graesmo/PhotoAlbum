@@ -61,6 +61,16 @@ Kommandoen skriver ut en adresse som `https://photo-album-api.<konto>.workers.de
 4. Trykk på ⭐ på bildene som skal være høydepunkter, og dra bildene for å endre rekkefølgen.
 5. Huk av **Publisert** og trykk **Lagre**. Nye album er skjult til du publiserer dem.
 
+## Vise bildene på TV
+
+Nettsider kan ikke sende bilder rett til en TV fra iPhone, så bruk **Skjermspeiling** (AirPlay) fra Kontrollsenteret:
+
+1. Slå av retningslåsen og **snu mobilen på siden**. Står den på høykant, blir bildet bare en smal stripe midt på TV-en.
+2. Trykk på et bilde eller på fullskjerm-knappen. Bildet fyller da hele skjermen, og knapper og miniatyrer skjuler seg etter noen sekunder. Trykk på bildet for å få dem tilbake.
+3. Bildene blar ikke av seg selv. Vil du ha automatisk fremvisning, trykker du på ▶ (knappen blir farget når den er på). Den stopper igjen når du går ut av fullskjerm. Skjermen holdes våken så lenge fremvisningen står i fullskjerm.
+
+**Tips:** Velg *Del → Legg til på Hjem-skjerm* i Safari. Åpnet derfra vises albumet uten Safaris adresselinje, så bildet blir enda litt større. Du må logge inn én gang til der.
+
 ## Lokal testing
 
 ```bash
