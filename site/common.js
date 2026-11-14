@@ -76,6 +76,43 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
+/**
+ * Temaene et album kan vises med. Det første er standard. Fargene og skriftene ligger i
+ * styles.css under [data-theme="<id>"]; her står bare det JavaScript trenger.
+ *   color – bakgrunnsfargen (brukes til nettleserens verktøylinje)
+ *   fonts – skrifter som hentes fra Google Fonts når temaet er i bruk
+ */
+const THEMES = [
+  { id: "reisedagbok", name: "Reisedagbok", color: "#f5eddf", fonts: "family=Caveat:wght@500;700" },
+  { id: "storby", name: "Storby", color: "#14161b", fonts: "family=Bebas+Neue" },
+  { id: "strand", name: "Sol og strand", color: "#fdf3dc", fonts: "family=Pacifico&family=Nunito:wght@400;800" },
+  { id: "fjell", name: "Fjell og hytte", color: "#e8ebe2", fonts: "family=Amatic+SC:wght@700&family=Bitter:wght@400;700" },
+  { id: "vinter", name: "Vinter", color: "#eaf2f8", fonts: "family=Josefin+Sans:wght@300;600" },
+  { id: "jul", name: "Jul", color: "#123a2e", fonts: "family=Mountains+of+Christmas:wght@700" },
+  { id: "bryllup", name: "Bryllup og fest", color: "#fbf6f2", fonts: "family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;1,500" },
+  { id: "bursdag", name: "Bursdag", color: "#fff7ec", fonts: "family=Fredoka:wght@500;700" },
+  { id: "nostalgi", name: "Gamle dager", color: "#1b1917", fonts: "family=Special+Elite&family=Playfair+Display:wght@700" },
+  { id: "galleri", name: "Galleri", color: "#ffffff" },
+];
+
+function themeById(id) {
+  return THEMES.find((t) => t.id === id) || THEMES[0];
+}
+
+function loadThemeFonts(theme) {
+  const id = `theme-fonts-${theme.id}`;
+  if (!theme.fonts || document.getElementById(id)) return;
+  document.head.append(el("link", { id, rel: "stylesheet", href: `https://fonts.googleapis.com/css2?${theme.fonts}&display=swap` }));
+}
+
+/** Setter utseendet på hele siden. Ukjent eller manglende tema gir standardtemaet. */
+function applyTheme(id) {
+  const theme = themeById(id);
+  if (theme !== THEMES[0]) loadThemeFonts(theme); // standardtemaets skrifter ligger alt i index.html
+  document.body.dataset.theme = theme.id;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.color);
+}
+
 const ICONS = {
   prev: '<path d="M15 18l-6-6 6-6"/>',
   next: '<path d="M9 6l6 6-6 6"/>',
@@ -88,6 +125,7 @@ const ICONS = {
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
   chevron: '<path d="M6 9l6 6 6-6"/>',
   tv: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
   logout: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
   grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
 };

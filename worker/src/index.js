@@ -343,6 +343,7 @@ async function createAlbum(request, env) {
     date: cleanDate(body.date) || new Date().toISOString().slice(0, 10),
     dateEnd: cleanDate(body.dateEnd),
     description: cleanText(body.description, 2000),
+    theme: cleanTheme(body.theme),
     hidden: body.hidden !== false, // nye album er skjult til du publiserer dem
     coverId: null,
     count: 0,
@@ -370,6 +371,7 @@ async function updateAlbum(request, env, albumId) {
     if ("dateEnd" in body) album.dateEnd = cleanDate(body.dateEnd);
     if ("description" in body) album.description = cleanText(body.description, 2000);
     if ("hidden" in body) album.hidden = !!body.hidden;
+    if ("theme" in body) album.theme = cleanTheme(body.theme);
     if ("coverId" in body) album.coverId = body.coverId ? checkId(body.coverId) : null;
     updated = album;
   });
@@ -649,6 +651,10 @@ function slugify(s) {
 
 function cleanText(v, max) {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
+}
+/** Navnet på utseendet albumet vises med. Selve temaene ligger i nettsiden (THEMES i common.js). */
+function cleanTheme(v) {
+  return typeof v === "string" && /^[a-z0-9-]{1,32}$/.test(v) ? v : null;
 }
 function cleanDate(v) {
   return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;

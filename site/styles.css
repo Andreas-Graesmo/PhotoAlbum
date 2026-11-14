@@ -660,7 +660,7 @@ label {
 }
 .tv-dialog h2 {
   margin: 0;
-  font-size: 36px;
+  font-size: calc(36px * var(--hand-scale, 1));
   line-height: 1;
 }
 .tv-dialog ol {
@@ -930,7 +930,7 @@ label {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   background: var(--surface-2);
-  cursor: grab;
+  cursor: zoom-in;
 }
 .photo-card-tools {
   position: absolute;
@@ -1016,7 +1016,10 @@ label {
    Reisedagbok – tema for albumsiden (body.journal)
    ================================================================ */
 
-body.journal {
+/* Alt som skiller temaene fra hverandre er variabler. Standardverdiene her er Reisedagbok;
+   de andre temaene (nederst i filen) overstyrer dem med [data-theme="…"]. */
+.journal,
+[data-theme="reisedagbok"] {
   --bg: #f5eddf;
   --surface: #fbf6ec;
   --surface-2: #efe3cf;
@@ -1024,23 +1027,72 @@ body.journal {
   --text: #3a2c20;
   --muted: #7d6a57;
   --accent: #b9572a;
+  --accent-hover: #a84d23;
   --accent-ink: #fff8ef;
-  --sea: #2c7a80;
+  --accent-2: #2c7a80; /* overskriftene til høydepunktene */
+  --heading: var(--accent); /* seksjonsoverskrifter */
+  --paper: #fffdf8; /* kort og menyer */
+  --header-bg: rgba(245, 237, 223, 0.88);
+  --hover: rgba(74, 52, 30, 0.08);
+  --active: rgba(185, 87, 42, 0.1);
+  --shade: 58, 44, 32; /* skyggefarge (r, g, b) */
+  --stage-bg: #2b2119;
+
+  /* Bildene i høydepunktene */
+  --photo-paper: #fffdf8;
+  --photo-ink: var(--text);
+  --frame: 14px; /* bredden på papirkanten */
+  --tape: rgba(214, 190, 140, 0.55);
+  --tape-display: block; /* none = ingen teipbit */
+  --tilt-scale: 1; /* 0 = helt rette bilder */
+
+  /* Forsiden */
+  --hero-ink: #fff8ef;
+  --hero-date: #ffd9a8;
+  --hero-shade: 30, 20, 10;
+  --hero-radius: 6px;
+
+  /* Skrift: «hand» er pynteskriften, «display» er albumtittelen, «prose» er brødtekst */
   --hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
-  color-scheme: light;
-  background-color: var(--bg);
-  background-image:
+  --hand-weight: 700;
+  --hand-scale: 1;
+  --hand-spacing: 0;
+  --hand-case: none;
+  --display: var(--serif);
+  --display-weight: 400;
+  --display-spacing: -0.015em;
+  --display-case: none;
+  --prose: var(--serif);
+  --intro-style: italic;
+
+  /* Bakgrunnsmønster */
+  --page-image:
     radial-gradient(rgba(120, 90, 50, 0.07) 1px, transparent 1px),
     radial-gradient(rgba(120, 90, 50, 0.05) 1px, transparent 1px);
-  background-size: 22px 22px, 37px 37px;
-  background-position: 0 0, 11px 17px;
+  --page-size: 22px 22px, 37px 37px;
+  --page-position: 0 0, 11px 17px;
+  --page-repeat: repeat;
+  color-scheme: light;
+}
+body.journal {
+  background-color: var(--bg);
+  background-image: var(--page-image);
+  background-size: var(--page-size);
+  background-position: var(--page-position);
+  background-repeat: var(--page-repeat);
+  color: var(--text);
 }
 
-.journal .hand {
+.journal .hand,
+.journal .login-card h1,
+.journal .brand,
+.journal .stage-counter,
+.journal .stage-caption,
+.journal .empty-state h1 {
   font-family: var(--hand);
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
+  font-weight: var(--hand-weight);
+  letter-spacing: var(--hand-spacing);
+  text-transform: var(--hand-case);
 }
 
 .journal .btn-primary {
@@ -1049,11 +1101,11 @@ body.journal {
   color: var(--accent-ink);
 }
 .journal .btn-primary:hover {
-  background: #a84d23;
-  border-color: #a84d23;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 .journal .btn-icon:hover {
-  background: rgba(74, 52, 30, 0.08);
+  background: var(--hover);
 }
 
 /* Innlogging */
@@ -1062,14 +1114,15 @@ body.journal {
 }
 .journal .login-card {
   position: relative;
-  background: #fffdf8;
+  background: var(--paper);
   border: 0;
   border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(58, 44, 32, 0.12), 0 12px 30px rgba(58, 44, 32, 0.14);
-  transform: rotate(-1deg);
+  box-shadow: 0 1px 2px rgba(var(--shade), 0.12), 0 12px 30px rgba(var(--shade), 0.14);
+  transform: rotate(calc(-1deg * var(--tilt-scale)));
 }
 .journal .login-card::before {
   content: "";
+  display: var(--tape-display);
   position: absolute;
   top: -12px;
   left: 50%;
@@ -1077,33 +1130,29 @@ body.journal {
   height: 26px;
   translate: -50% 0;
   rotate: 2deg;
-  background: rgba(214, 190, 140, 0.6);
+  background: var(--tape);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 .journal .login-card h1 {
-  font-family: var(--hand);
-  font-size: 44px;
-  font-weight: 700;
+  font-size: calc(44px * var(--hand-scale));
 }
 
 /* Toppmeny */
 .journal .site-header {
-  background: rgba(245, 237, 223, 0.88);
+  background: var(--header-bg);
 }
 .journal .brand {
-  font-family: var(--hand);
-  font-size: 26px;
-  font-weight: 700;
+  font-size: calc(26px * var(--hand-scale));
 }
 .journal .album-menu-toggle {
-  background: #fffdf8;
+  background: var(--paper);
 }
 .journal .album-menu-panel {
-  background: #fffdf8;
-  box-shadow: 0 16px 40px rgba(58, 44, 32, 0.18);
+  background: var(--paper);
+  box-shadow: 0 16px 40px rgba(var(--shade), 0.18);
 }
 .journal .menu-item.is-active {
-  background: rgba(185, 87, 42, 0.1);
+  background: var(--active);
 }
 
 /* Forside */
@@ -1115,10 +1164,10 @@ body.journal {
   margin: 20px 0 0;
   height: min(78vh, 760px);
   min-height: 360px;
-  border-radius: 6px;
+  border-radius: var(--hero-radius);
   overflow: hidden;
   background: var(--surface-2);
-  box-shadow: 0 2px 4px rgba(58, 44, 32, 0.1), 0 20px 50px rgba(58, 44, 32, 0.18);
+  box-shadow: 0 2px 4px rgba(var(--shade), 0.1), 0 20px 50px rgba(var(--shade), 0.18);
 }
 .hero-img {
   width: 100%;
@@ -1138,24 +1187,25 @@ body.journal {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(30, 20, 10, 0.72) 0%, rgba(30, 20, 10, 0.2) 45%, transparent 70%);
+  background: linear-gradient(to top, rgba(var(--hero-shade), 0.72) 0%, rgba(var(--hero-shade), 0.2) 45%, transparent 70%);
 }
 .hero-text {
   position: absolute;
   inset: auto 0 0;
   z-index: 1;
   padding: clamp(20px, 5vw, 56px);
-  color: #fff8ef;
+  color: var(--hero-ink);
 }
 .hero-dates {
   margin: 0 0 4px;
-  font-size: clamp(22px, 3vw, 30px);
-  color: #ffd9a8;
+  font-size: calc(clamp(22px, 3vw, 30px) * var(--hand-scale));
+  color: var(--hero-date);
 }
 .hero-title {
   margin: 0;
-  font: 400 clamp(40px, 8vw, 92px) / 1 var(--serif);
-  letter-spacing: -0.015em;
+  font: var(--display-weight) clamp(40px, 8vw, 92px) / 1 var(--display);
+  letter-spacing: var(--display-spacing);
+  text-transform: var(--display-case);
   text-wrap: balance;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.25);
 }
@@ -1181,14 +1231,14 @@ body.journal {
   color: var(--text);
 }
 .hero--plain .hero-dates {
-  color: var(--accent);
+  color: var(--heading);
 }
 
 .journal .album-desc {
   max-width: 640px;
   margin: clamp(32px, 6vw, 64px) auto 0;
   text-align: center;
-  font: italic 400 clamp(18px, 2.2vw, 22px) / 1.6 var(--serif);
+  font: var(--intro-style) 400 clamp(18px, 2.2vw, 22px) / 1.6 var(--prose);
   color: var(--text);
 }
 
@@ -1198,8 +1248,8 @@ body.journal {
 .journal .section-title {
   margin: 0 0 clamp(24px, 4vw, 48px);
   text-align: center;
-  font-size: clamp(36px, 5vw, 52px);
-  color: var(--accent);
+  font-size: calc(clamp(36px, 5vw, 52px) * var(--hand-scale));
+  color: var(--heading);
 }
 
 /* Høydepunkter: annenhver side */
@@ -1235,20 +1285,21 @@ body.journal {
   display: grid;
   gap: 10px;
   width: 100%;
-  padding: 14px 14px 18px;
+  padding: var(--frame) var(--frame) calc(var(--frame) + 4px);
   border: 0;
-  background: #fffdf8;
-  box-shadow: 0 1px 3px rgba(58, 44, 32, 0.15), 0 14px 34px rgba(58, 44, 32, 0.16);
-  transform: rotate(var(--tilt, 0deg));
+  background: var(--photo-paper);
+  box-shadow: 0 1px 3px rgba(var(--shade), 0.15), 0 14px 34px rgba(var(--shade), 0.16);
+  transform: rotate(calc(var(--tilt, 0deg) * var(--tilt-scale)));
   transition: transform 0.35s ease, box-shadow 0.35s ease;
   cursor: zoom-in;
 }
 .polaroid:hover {
   transform: rotate(0deg) scale(1.015);
-  box-shadow: 0 2px 4px rgba(58, 44, 32, 0.15), 0 22px 46px rgba(58, 44, 32, 0.2);
+  box-shadow: 0 2px 4px rgba(var(--shade), 0.15), 0 22px 46px rgba(var(--shade), 0.2);
 }
 .polaroid::before {
   content: "";
+  display: var(--tape-display);
   position: absolute;
   z-index: 1;
   top: -13px;
@@ -1258,7 +1309,7 @@ body.journal {
   height: 28px;
   translate: -50% 0;
   rotate: calc(var(--tilt, 0deg) * -1.6);
-  background: rgba(214, 190, 140, 0.55);
+  background: var(--tape);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 .polaroid img {
@@ -1267,9 +1318,9 @@ body.journal {
   background: var(--surface-2);
 }
 .polaroid-caption {
-  font-size: 22px;
+  font-size: calc(22px * var(--hand-scale));
   line-height: 1.2;
-  color: var(--text);
+  color: var(--photo-ink);
   text-align: center;
 }
 
@@ -1281,13 +1332,13 @@ body.journal {
 }
 .story-title {
   margin: 0 0 12px;
-  font-size: clamp(32px, 4vw, 44px);
+  font-size: calc(clamp(32px, 4vw, 44px) * var(--hand-scale));
   line-height: 1.1;
-  color: var(--sea);
+  color: var(--accent-2);
 }
 .story-text p {
   margin: 0 0 14px;
-  font: 400 17px/1.75 var(--serif);
+  font: 400 17px/1.75 var(--prose);
   color: var(--text);
 }
 
@@ -1318,7 +1369,7 @@ body.journal {
     justify-self: center;
   }
   .polaroid {
-    padding: 10px 10px 14px;
+    padding: max(0px, var(--frame) - 4px) max(0px, var(--frame) - 4px) max(4px, var(--frame));
   }
   .hero {
     margin-top: 12px;
@@ -1328,25 +1379,20 @@ body.journal {
 
 /* Lysbildefremvisning i dagbok-stil */
 .journal .stage {
-  background: #2b2119;
+  background: var(--stage-bg);
   border-radius: 6px;
 }
 .journal .stage-counter {
-  font-family: var(--hand);
-  font-size: 22px;
-  font-weight: 700;
+  font-size: calc(22px * var(--hand-scale));
 }
 .journal .stage-caption {
-  font-family: var(--hand);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: calc(24px * var(--hand-scale));
 }
 .journal .thumb {
   background: var(--surface-2);
 }
 .journal .empty-state h1 {
-  font-family: var(--hand);
-  font-size: 40px;
+  font-size: calc(40px * var(--hand-scale));
 }
 
 /* Admin: tekst til høydepunkter */
@@ -1380,4 +1426,608 @@ body.journal {
   .story-editor {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Admin: forhåndsvisning av bilder */
+.preview-btn {
+  cursor: zoom-in;
+}
+.preview-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.preview {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  background: rgba(8, 7, 9, 0.94);
+  color: #fff;
+  touch-action: pan-y;
+}
+.preview-stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: max(16px, env(safe-area-inset-top)) 16px 0;
+}
+.preview-img {
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.preview-info {
+  margin: 0;
+  padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.preview-close {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+.preview-close:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Admin: velg tema for albumet. Hver rute bruker temaets egne farger, mønster og skrift. */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.theme-option {
+  display: grid;
+  gap: 6px;
+  padding: 4px 4px 8px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: none;
+  cursor: pointer;
+  text-align: center;
+  font-size: 13px;
+}
+.theme-option:hover {
+  background: var(--surface-2);
+}
+.theme-option[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.theme-option[aria-pressed="true"] .theme-option-name {
+  font-weight: 600;
+}
+.theme-swatch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 104px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background-color: var(--bg);
+  background-image: var(--page-image);
+  background-size: var(--page-size);
+  background-position: var(--page-position);
+  background-repeat: var(--page-repeat);
+}
+.theme-swatch-photo {
+  flex: none;
+  width: 44px;
+  height: 40px;
+  padding: min(var(--frame), 4px) min(var(--frame), 4px) calc(min(var(--frame), 4px) * 2);
+  background: var(--photo-paper);
+  box-shadow: 0 3px 8px rgba(var(--shade), 0.3);
+  transform: rotate(calc(-5deg * var(--tilt-scale)));
+}
+.theme-swatch-photo::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, var(--accent-2), var(--accent));
+}
+.theme-swatch-title {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--hand);
+  font-weight: var(--hand-weight);
+  font-size: calc(21px * var(--hand-scale));
+  line-height: 1.2;
+  letter-spacing: var(--hand-spacing);
+  text-transform: var(--hand-case);
+  color: var(--heading);
+}
+
+/* ================================================================
+   Flere temaer for albumsiden. Velges per album i admin (album.theme) og settes som
+   data-theme på <body>. Hvert tema overstyrer variablene fra Reisedagbok og legger til
+   noen få egne detaljer. Listen over temaer står i THEMES i common.js.
+   ================================================================ */
+
+/* ---------------------------------------------------------------- Storby: asfalt, taxigult og neon */
+[data-theme="storby"] {
+  --bg: #14161b;
+  --surface: #1d2027;
+  --surface-2: #2a2e37;
+  --border: rgba(255, 255, 255, 0.11);
+  --text: #eceae4;
+  --muted: #9a9da6;
+  --accent: #ffd23f;
+  --accent-hover: #ffe07a;
+  --accent-ink: #17181c;
+  --accent-2: #ff6b81;
+  --heading: #ffd23f;
+  --paper: #1d2027;
+  --header-bg: rgba(20, 22, 27, 0.86);
+  --hover: rgba(255, 255, 255, 0.08);
+  --active: rgba(255, 210, 63, 0.14);
+  --shade: 0, 0, 0;
+  --stage-bg: #0b0c0f;
+  --photo-paper: #f3f1ea;
+  --photo-ink: #1c1d21;
+  --frame: 8px;
+  --tape-display: none;
+  --tilt-scale: 0;
+  --hero-ink: #fff;
+  --hero-date: #ffd23f;
+  --hero-shade: 8, 9, 12;
+  --hero-radius: 2px;
+  --hand: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+  --hand-weight: 400;
+  --hand-scale: 0.92;
+  --hand-spacing: 0.06em;
+  --hand-case: uppercase;
+  --display: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+  --display-weight: 400;
+  --display-spacing: 0.02em;
+  --display-case: uppercase;
+  --prose: var(--font);
+  --intro-style: normal;
+  --page-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  --page-size: 56px 56px, 56px 56px;
+  --page-position: 0 0, 0 0;
+  color-scheme: dark;
+}
+[data-theme="storby"] .hero-title {
+  font-size: clamp(56px, 11vw, 136px);
+  line-height: 0.92;
+}
+[data-theme="storby"] .section-title::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 4px;
+  margin: 10px auto 0;
+  background: var(--accent-2);
+}
+
+/* ---------------------------------------------------------------- Sol og strand: sand, turkis og korall */
+[data-theme="strand"] {
+  --bg: #fdf3dc;
+  --surface: #fff9ea;
+  --surface-2: #f6e6bf;
+  --border: rgba(20, 80, 90, 0.15);
+  --text: #1f4650;
+  --muted: #5e7f86;
+  --accent: #f26b4e;
+  --accent-hover: #de5839;
+  --accent-ink: #fff;
+  --accent-2: #0d8f9c;
+  --heading: #0d8f9c;
+  --paper: #fffdf6;
+  --header-bg: rgba(253, 243, 220, 0.88);
+  --hover: rgba(13, 143, 156, 0.1);
+  --active: rgba(242, 107, 78, 0.12);
+  --shade: 40, 70, 80;
+  --stage-bg: #123a42;
+  --photo-paper: #fff;
+  --tape: rgba(64, 196, 204, 0.55);
+  --hero-ink: #fff;
+  --hero-date: #ffe08a;
+  --hero-shade: 8, 45, 55;
+  --hero-radius: 22px;
+  --hand: "Pacifico", "Caveat", cursive;
+  --hand-weight: 400;
+  --hand-scale: 0.76;
+  --display: "Nunito", var(--font);
+  --display-weight: 800;
+  --display-spacing: -0.02em;
+  --prose: "Nunito", var(--font);
+  --intro-style: normal;
+  --page-image:
+    radial-gradient(circle at 100% 0, rgba(255, 190, 70, 0.5), rgba(255, 190, 70, 0) 460px),
+    radial-gradient(rgba(190, 150, 80, 0.16) 1px, transparent 1.5px),
+    radial-gradient(rgba(190, 150, 80, 0.1) 1px, transparent 1.5px);
+  --page-size: 100% 100%, 18px 18px, 29px 29px;
+  --page-position: 0 0, 0 0, 9px 14px;
+  --page-repeat: no-repeat, repeat, repeat;
+}
+[data-theme="strand"] .polaroid {
+  border-radius: 8px;
+}
+[data-theme="strand"] .polaroid img {
+  border-radius: 4px;
+}
+
+/* ---------------------------------------------------------------- Fjell og hytte: mose, granskog og kartkoter */
+[data-theme="fjell"] {
+  --bg: #e8ebe2;
+  --surface: #f3f5ee;
+  --surface-2: #d9dfd0;
+  --border: rgba(36, 48, 42, 0.17);
+  --text: #24302a;
+  --muted: #65736a;
+  --accent: #2f6b4f;
+  --accent-hover: #24573f;
+  --accent-ink: #f3f7ef;
+  --accent-2: #a4552c;
+  --heading: #2f6b4f;
+  --paper: #f8f9f4;
+  --header-bg: rgba(232, 235, 226, 0.9);
+  --hover: rgba(36, 48, 42, 0.08);
+  --active: rgba(47, 107, 79, 0.13);
+  --shade: 30, 42, 36;
+  --stage-bg: #1b2520;
+  --photo-paper: #fbfbf7;
+  --tape: rgba(164, 85, 44, 0.5);
+  --tilt-scale: 0.6;
+  --hero-ink: #f7f8f2;
+  --hero-date: #dfe8c9;
+  --hero-shade: 14, 26, 20;
+  --hero-radius: 4px;
+  --hand: "Amatic SC", "Caveat", cursive;
+  --hand-weight: 700;
+  --hand-scale: 1.2;
+  --hand-spacing: 0.05em;
+  --display: "Bitter", Georgia, serif;
+  --display-weight: 700;
+  --display-spacing: -0.01em;
+  --prose: "Bitter", Georgia, serif;
+  --intro-style: normal;
+  --page-image:
+    repeating-radial-gradient(circle at 16% 220px, transparent 0 46px, rgba(47, 107, 79, 0.075) 46px 47.5px),
+    repeating-radial-gradient(circle at 88% 1100px, transparent 0 62px, rgba(47, 107, 79, 0.055) 62px 63.5px);
+  --page-size: auto, auto;
+  --page-position: 0 0, 0 0;
+  --page-repeat: no-repeat;
+}
+
+/* ---------------------------------------------------------------- Vinter: is, snø og kald blå */
+[data-theme="vinter"] {
+  --bg: #eaf2f8;
+  --surface: #f6fafc;
+  --surface-2: #d8e6f0;
+  --border: rgba(20, 50, 80, 0.15);
+  --text: #1c2c3c;
+  --muted: #5f7488;
+  --accent: #1f6fb2;
+  --accent-hover: #185c95;
+  --accent-ink: #fff;
+  --accent-2: #0d4470;
+  --heading: #1f6fb2;
+  --paper: #fff;
+  --header-bg: rgba(234, 242, 248, 0.88);
+  --hover: rgba(31, 111, 178, 0.09);
+  --active: rgba(31, 111, 178, 0.12);
+  --shade: 20, 45, 70;
+  --stage-bg: #0f1e2c;
+  --photo-paper: #fff;
+  --frame: 10px;
+  --tape-display: none;
+  --tilt-scale: 0.35;
+  --hero-ink: #fff;
+  --hero-date: #cfe6f7;
+  --hero-shade: 10, 30, 50;
+  --hero-radius: 14px;
+  --hand: "Josefin Sans", var(--font);
+  --hand-weight: 600;
+  --hand-scale: 0.66;
+  --hand-spacing: 0.16em;
+  --hand-case: uppercase;
+  --display: "Josefin Sans", var(--font);
+  --display-weight: 300;
+  --display-spacing: 0.01em;
+  --prose: var(--font);
+  --intro-style: normal;
+  --page-image:
+    radial-gradient(circle, #fff 1.5px, transparent 2px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.85) 2.5px, transparent 3px),
+    linear-gradient(180deg, #d6e7f3, rgba(214, 231, 243, 0) 700px);
+  --page-size: 70px 70px, 130px 130px, 100% 100%;
+  --page-position: 0 0, 40px 65px, 0 0;
+  --page-repeat: repeat, repeat, no-repeat;
+}
+
+/* ---------------------------------------------------------------- Jul: grangrønt, rødt bånd og gull */
+[data-theme="jul"] {
+  --bg: #123a2e;
+  --surface: #184838;
+  --surface-2: #215a47;
+  --border: rgba(255, 244, 214, 0.15);
+  --text: #f6eedb;
+  --muted: #b9c7b4;
+  --accent: #c8372d;
+  --accent-hover: #dc4a3f;
+  --accent-ink: #fff6e6;
+  --accent-2: #f0c66b;
+  --heading: #f0c66b;
+  --paper: #184838;
+  --header-bg: rgba(18, 58, 46, 0.9);
+  --hover: rgba(255, 244, 214, 0.1);
+  --active: rgba(240, 198, 107, 0.16);
+  --shade: 3, 20, 14;
+  --stage-bg: #0b2219;
+  --photo-paper: #fffaf0;
+  --photo-ink: #3a2c20;
+  --tape: rgba(200, 55, 45, 0.85);
+  --hero-ink: #fff8ea;
+  --hero-date: #f0c66b;
+  --hero-shade: 6, 28, 20;
+  --hand: "Mountains of Christmas", "Caveat", cursive;
+  --hand-weight: 700;
+  --hand-scale: 0.95;
+  --page-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.3) 1.5px, transparent 2px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.18) 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.14) 2.5px, transparent 3px);
+  --page-size: 90px 90px, 60px 60px, 150px 150px;
+  --page-position: 0 0, 30px 45px, 70px 20px;
+  color-scheme: dark;
+}
+[data-theme="jul"] .section-title::before,
+[data-theme="jul"] .section-title::after {
+  content: "✦";
+  margin: 0 0.5em;
+  font-size: 0.5em;
+  vertical-align: middle;
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- Bryllup og fest: hvitt, gull og skjønnskrift */
+[data-theme="bryllup"] {
+  --bg: #fbf6f2;
+  --surface: #fff;
+  --surface-2: #f3e7e2;
+  --border: rgba(90, 60, 60, 0.14);
+  --text: #3d3134;
+  --muted: #8d7b7e;
+  --accent: #a98545;
+  --accent-hover: #91703a;
+  --accent-ink: #fff;
+  --accent-2: #b0667a;
+  --heading: #a98545;
+  --paper: #fff;
+  --header-bg: rgba(251, 246, 242, 0.9);
+  --hover: rgba(169, 133, 69, 0.1);
+  --active: rgba(169, 133, 69, 0.13);
+  --shade: 80, 55, 50;
+  --stage-bg: #2a2224;
+  --photo-paper: #fff;
+  --frame: 16px;
+  --tape-display: none;
+  --tilt-scale: 0.25;
+  --hero-ink: #fff;
+  --hero-date: #f6e3c5;
+  --hero-shade: 40, 26, 28;
+  --hero-radius: 2px;
+  --hand: "Great Vibes", "Snell Roundhand", "Caveat", cursive;
+  --hand-weight: 400;
+  --hand-scale: 1.12;
+  --display: "Cormorant Garamond", Georgia, serif;
+  --display-weight: 500;
+  --display-spacing: 0;
+  --prose: "Cormorant Garamond", Georgia, serif;
+  --page-image: none;
+}
+[data-theme="bryllup"] .polaroid {
+  outline: 1px solid rgba(169, 133, 69, 0.4);
+  outline-offset: -8px;
+}
+[data-theme="bryllup"] .section-title::after {
+  content: "";
+  display: block;
+  width: 90px;
+  height: 1px;
+  margin: 12px auto 0;
+  background: var(--accent);
+}
+[data-theme="bryllup"] .story-text p {
+  font-size: 20px;
+  line-height: 1.6;
+}
+[data-theme="bryllup"] .album-desc {
+  font-size: clamp(21px, 2.6vw, 26px);
+}
+
+/* ---------------------------------------------------------------- Bursdag: konfetti og runde former */
+[data-theme="bursdag"] {
+  --bg: #fff7ec;
+  --surface: #fffdf8;
+  --surface-2: #ffe9cf;
+  --border: rgba(60, 40, 90, 0.15);
+  --text: #2b2444;
+  --muted: #766e90;
+  --accent: #ff4f8b;
+  --accent-hover: #ea3a76;
+  --accent-ink: #fff;
+  --accent-2: #5a55e0;
+  --heading: #ff4f8b;
+  --paper: #fff;
+  --header-bg: rgba(255, 247, 236, 0.9);
+  --hover: rgba(90, 85, 224, 0.1);
+  --active: rgba(255, 79, 139, 0.12);
+  --shade: 60, 40, 90;
+  --stage-bg: #241d3d;
+  --photo-paper: #fff;
+  --tape: rgba(255, 205, 60, 0.85);
+  --tilt-scale: 1.4;
+  --hero-ink: #fff;
+  --hero-date: #ffe066;
+  --hero-shade: 35, 20, 60;
+  --hero-radius: 24px;
+  --hand: "Fredoka", var(--font);
+  --hand-weight: 700;
+  --hand-scale: 0.8;
+  --display: "Fredoka", var(--font);
+  --display-weight: 700;
+  --display-spacing: -0.01em;
+  --prose: var(--font);
+  --intro-style: normal;
+  --page-image:
+    radial-gradient(circle, rgba(255, 79, 139, 0.4) 4px, transparent 4.5px),
+    radial-gradient(circle, rgba(255, 205, 60, 0.55) 5px, transparent 5.5px),
+    radial-gradient(circle, rgba(76, 201, 240, 0.45) 3.5px, transparent 4px),
+    radial-gradient(circle, rgba(123, 211, 137, 0.45) 4px, transparent 4.5px);
+  --page-size: 190px 190px, 230px 230px, 170px 170px, 260px 260px;
+  --page-position: 20px 30px, 120px 90px, 80px 150px, 200px 40px;
+}
+[data-theme="bursdag"] .polaroid {
+  border-radius: 12px;
+}
+[data-theme="bursdag"] .polaroid img {
+  border-radius: 7px;
+}
+
+/* ---------------------------------------------------------------- Gamle dager: svarte albumsider og fotohjørner */
+[data-theme="nostalgi"] {
+  --bg: #1b1917;
+  --surface: #252220;
+  --surface-2: #332f2b;
+  --border: rgba(232, 222, 204, 0.15);
+  --text: #e9e0cf;
+  --muted: #a39a8a;
+  --accent: #c9a66b;
+  --accent-hover: #d9b983;
+  --accent-ink: #1b1917;
+  --accent-2: #e9e0cf;
+  --heading: #c9a66b;
+  --paper: #252220;
+  --header-bg: rgba(27, 25, 23, 0.9);
+  --hover: rgba(232, 222, 204, 0.09);
+  --active: rgba(201, 166, 107, 0.16);
+  --shade: 0, 0, 0;
+  --stage-bg: #0d0c0b;
+  --photo-paper: #efe6d3;
+  --photo-ink: #3a3128;
+  --frame: 12px;
+  --tilt-scale: 0.7;
+  --hero-ink: #f3ead8;
+  --hero-date: #d9c39a;
+  --hero-shade: 12, 10, 8;
+  --hero-radius: 2px;
+  --hand: "Special Elite", "Courier New", monospace;
+  --hand-weight: 400;
+  --hand-scale: 0.7;
+  --hand-spacing: 0.01em;
+  --display: "Playfair Display", Georgia, serif;
+  --display-weight: 700;
+  --display-spacing: -0.005em;
+  --page-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  --page-size: 5px 5px;
+  --page-position: 0 0;
+  color-scheme: dark;
+}
+/* Fotohjørner i stedet for teip */
+[data-theme="nostalgi"] .polaroid::before,
+[data-theme="nostalgi"] .polaroid::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  width: 38px;
+  max-width: none;
+  height: 38px;
+  translate: none;
+  rotate: none;
+  box-shadow: none;
+}
+[data-theme="nostalgi"] .polaroid::before {
+  top: -5px;
+  left: -5px;
+  background: linear-gradient(135deg, #3a342e 50%, transparent 50%);
+}
+[data-theme="nostalgi"] .polaroid::after {
+  right: -5px;
+  bottom: -5px;
+  background: linear-gradient(315deg, #3a342e 50%, transparent 50%);
+}
+[data-theme="nostalgi"] .login-card::before {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Galleri: hvite vegger, ingen pynt */
+[data-theme="galleri"] {
+  --bg: #fff;
+  --surface: #fff;
+  --surface-2: #f1f1f1;
+  --border: rgba(0, 0, 0, 0.13);
+  --text: #141414;
+  --muted: #767676;
+  --accent: #141414;
+  --accent-hover: #3a3a3a;
+  --accent-ink: #fff;
+  --accent-2: #141414;
+  --heading: #141414;
+  --paper: #fff;
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --hover: rgba(0, 0, 0, 0.06);
+  --active: rgba(0, 0, 0, 0.06);
+  --shade: 0, 0, 0;
+  --stage-bg: #111;
+  --photo-paper: transparent;
+  --frame: 0px;
+  --tape-display: none;
+  --tilt-scale: 0;
+  --hero-ink: #fff;
+  --hero-date: #fff;
+  --hero-shade: 0, 0, 0;
+  --hero-radius: 0px;
+  --hand: var(--font);
+  --hand-weight: 600;
+  --hand-scale: 0.6;
+  --hand-spacing: 0.18em;
+  --hand-case: uppercase;
+  --display: var(--font);
+  --display-weight: 300;
+  --display-spacing: -0.03em;
+  --prose: var(--font);
+  --intro-style: normal;
+  --page-image: none;
+}
+[data-theme="galleri"] .hero,
+[data-theme="galleri"] .polaroid,
+[data-theme="galleri"] .polaroid:hover {
+  box-shadow: none;
+}
+[data-theme="galleri"] .polaroid-caption {
+  text-align: left;
+  color: var(--muted);
+}
+[data-theme="galleri"] .section-title {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+/* Svart aksentfarge synes ikke mot svart fullskjerm */
+[data-theme="galleri"] .slideshow.is-fullscreen.is-playing .stage-controls .btn-icon:first-child,
+[data-theme="galleri"] .slideshow.is-fullscreen.is-remote .tv-btn,
+[data-theme="galleri"] .slideshow.is-fullscreen .tv-status {
+  background: #fff;
+  color: #141414;
 }
