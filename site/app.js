@@ -346,11 +346,14 @@ function createSlideshow(container, photos) {
 
   function onFsChange() {
     const fs = isFullscreen();
+    const leaving = !fs && root.classList.contains("is-fullscreen");
     root.classList.toggle("is-fullscreen", fs);
     if (fs) wake();
     else {
       clearTimeout(idleTimer);
       root.classList.remove("is-idle");
+      // Automatisk blaing skal ikke fortsette i bakgrunnen etter fullskjerm
+      if (leaving && timer) togglePlay();
     }
     fsBtn.replaceChildren(icon(fs ? "shrink" : "expand"));
     fsBtn.setAttribute("aria-label", fs ? "Avslutt fullskjerm" : "Fullskjerm");

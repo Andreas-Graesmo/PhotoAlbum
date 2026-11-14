@@ -474,7 +474,13 @@ label {
 }
 .stage-controls {
   display: flex;
-  gap: 4px;
+  gap: 12px;
+}
+/* Tydelig markering når automatisk blaing er slått på */
+.slideshow.is-playing .stage-controls .btn-icon:first-child,
+.slideshow.is-playing .stage-controls .btn-icon:first-child:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 .thumb-strip {
   display: flex;
