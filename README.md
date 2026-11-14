@@ -60,7 +60,7 @@ Kommandoen skriver ut en adresse som `https://photo-album-api.<konto>.workers.de
 2. Lag et album (f.eks. «Sommerferie 2026»).
 3. Trykk **Velg mappe** og velg bildemappen, eller dra mappen inn.
 4. Trykk på ⭐ på bildene som skal være høydepunkter, og dra bildene for å endre rekkefølgen. Trykk på et bilde for å se det større.
-5. Velg et **tema** for albumet (Reisedagbok, Storby, Sol og strand, Fjell og hytte, Vinter, Jul, Bryllup og fest, Bursdag, Gamle dager eller Galleri). Temaet lagres med en gang og endrer bare utseendet.
+5. Velg et **tema** for albumet, f.eks. Reisedagbok, Storby, Tropisk, Middelhavet, Fjell og hytte, Høst, Jul, 17. mai, Bryllup og fest eller Galleri (20 i alt). Temaet lagres med en gang og endrer bare utseendet.
 6. Huk av **Publisert** og trykk **Lagre**. Nye album er skjult til du publiserer dem.
 
 ## Vise bildene på TV

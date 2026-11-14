@@ -1019,7 +1019,7 @@ label {
 /* Alt som skiller temaene fra hverandre er variabler. Standardverdiene her er Reisedagbok;
    de andre temaene (nederst i filen) overstyrer dem med [data-theme="…"]. */
 .journal,
-[data-theme="reisedagbok"] {
+[data-theme] {
   --bg: #f5eddf;
   --surface: #fbf6ec;
   --surface-2: #efe3cf;
@@ -1541,13 +1541,17 @@ body.journal {
   background: linear-gradient(160deg, var(--accent-2), var(--accent));
 }
 .theme-swatch-title {
+  /* Lange navn får to linjer */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   max-width: 100%;
   overflow: hidden;
-  white-space: nowrap;
   font-family: var(--hand);
   font-weight: var(--hand-weight);
-  font-size: calc(21px * var(--hand-scale));
-  line-height: 1.2;
+  font-size: calc(19px * var(--hand-scale));
+  line-height: 1.1;
+  text-align: center;
   letter-spacing: var(--hand-spacing);
   text-transform: var(--hand-case);
   color: var(--heading);
@@ -1903,6 +1907,487 @@ body.journal {
 }
 [data-theme="bursdag"] .polaroid img {
   border-radius: 7px;
+}
+
+/* ---------------------------------------------------------------- Tropisk: jungel, palmeblader og hibiskus */
+[data-theme="tropisk"] {
+  --bg: #f3f1df;
+  --surface: #fbfaf0;
+  --surface-2: #e5ead0;
+  --border: rgba(18, 80, 55, 0.16);
+  --text: #163a2c;
+  --muted: #5c7468;
+  --accent: #e83f6f;
+  --accent-hover: #d02b5b;
+  --accent-ink: #fff;
+  --accent-2: #f07d1a;
+  --heading: #13704d;
+  --paper: #fffef6;
+  --header-bg: rgba(243, 241, 223, 0.88);
+  --hover: rgba(19, 112, 77, 0.09);
+  --active: rgba(232, 63, 111, 0.12);
+  --shade: 20, 60, 40;
+  --stage-bg: #0e2e22;
+  --photo-paper: #fff;
+  --tape: rgba(255, 170, 60, 0.7);
+  --hero-ink: #fff;
+  --hero-date: #ffd166;
+  --hero-shade: 6, 40, 26;
+  --hero-radius: 18px;
+  --hand: "Shrikhand", "Caveat", cursive;
+  --hand-weight: 400;
+  --hand-scale: 0.74;
+  --display: "Shrikhand", var(--serif);
+  --display-weight: 400;
+  --display-spacing: 0;
+  --prose: "Rubik", var(--font);
+  --intro-style: normal;
+  --page-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='460' height='460'%3E%3Cg fill-opacity='.13' stroke-opacity='.13'%3E%3Cg transform='translate(-20 60) rotate(25)'%3E%3Cpath d='M0 0 Q 150 -24 300 0' stroke='%231f7a4d' stroke-width='3' fill='none'/%3E%3Cpath d='M0 0 Q 59.8 -15.5 119.5 0 Q 59.8 15.5 0 0Z' fill='%231f7a4d' transform='translate(25.0 -3.7) rotate(-46)'/%3E%3Cpath d='M0 0 Q 59.8 -15.5 119.5 0 Q 59.8 15.5 0 0Z' fill='%231f7a4d' transform='translate(25.0 -3.7) rotate(46)'/%3E%3Cpath d='M0 0 Q 56.5 -14.7 113.0 0 Q 56.5 14.7 0 0Z' fill='%231f7a4d' transform='translate(50.0 -6.7) rotate(-45)'/%3E%3Cpath d='M0 0 Q 56.5 -14.7 113.0 0 Q 56.5 14.7 0 0Z' fill='%231f7a4d' transform='translate(50.0 -6.7) rotate(45)'/%3E%3Cpath d='M0 0 Q 53.2 -13.8 106.5 0 Q 53.2 13.8 0 0Z' fill='%231f7a4d' transform='translate(75.0 -9.0) rotate(-44)'/%3E%3Cpath d='M0 0 Q 53.2 -13.8 106.5 0 Q 53.2 13.8 0 0Z' fill='%231f7a4d' transform='translate(75.0 -9.0) rotate(44)'/%3E%3Cpath d='M0 0 Q 50.0 -13.0 100.0 0 Q 50.0 13.0 0 0Z' fill='%231f7a4d' transform='translate(100.0 -10.7) rotate(-42)'/%3E%3Cpath d='M0 0 Q 50.0 -13.0 100.0 0 Q 50.0 13.0 0 0Z' fill='%231f7a4d' transform='translate(100.0 -10.7) rotate(42)'/%3E%3Cpath d='M0 0 Q 46.8 -12.2 93.5 0 Q 46.8 12.2 0 0Z' fill='%231f7a4d' transform='translate(125.0 -11.7) rotate(-40)'/%3E%3Cpath d='M0 0 Q 46.8 -12.2 93.5 0 Q 46.8 12.2 0 0Z' fill='%231f7a4d' transform='translate(125.0 -11.7) rotate(40)'/%3E%3Cpath d='M0 0 Q 43.5 -11.3 87.0 0 Q 43.5 11.3 0 0Z' fill='%231f7a4d' transform='translate(150.0 -12.0) rotate(-39)'/%3E%3Cpath d='M0 0 Q 43.5 -11.3 87.0 0 Q 43.5 11.3 0 0Z' fill='%231f7a4d' transform='translate(150.0 -12.0) rotate(39)'/%3E%3Cpath d='M0 0 Q 40.2 -10.5 80.5 0 Q 40.2 10.5 0 0Z' fill='%231f7a4d' transform='translate(175.0 -11.7) rotate(-38)'/%3E%3Cpath d='M0 0 Q 40.2 -10.5 80.5 0 Q 40.2 10.5 0 0Z' fill='%231f7a4d' transform='translate(175.0 -11.7) rotate(38)'/%3E%3Cpath d='M0 0 Q 37.0 -9.6 74.0 0 Q 37.0 9.6 0 0Z' fill='%231f7a4d' transform='translate(200.0 -10.7) rotate(-36)'/%3E%3Cpath d='M0 0 Q 37.0 -9.6 74.0 0 Q 37.0 9.6 0 0Z' fill='%231f7a4d' transform='translate(200.0 -10.7) rotate(36)'/%3E%3Cpath d='M0 0 Q 33.8 -8.8 67.5 0 Q 33.8 8.8 0 0Z' fill='%231f7a4d' transform='translate(225.0 -9.0) rotate(-34)'/%3E%3Cpath d='M0 0 Q 33.8 -8.8 67.5 0 Q 33.8 8.8 0 0Z' fill='%231f7a4d' transform='translate(225.0 -9.0) rotate(34)'/%3E%3Cpath d='M0 0 Q 30.5 -7.9 61.0 0 Q 30.5 7.9 0 0Z' fill='%231f7a4d' transform='translate(250.0 -6.7) rotate(-33)'/%3E%3Cpath d='M0 0 Q 30.5 -7.9 61.0 0 Q 30.5 7.9 0 0Z' fill='%231f7a4d' transform='translate(250.0 -6.7) rotate(33)'/%3E%3Cpath d='M0 0 Q 27.2 -7.1 54.5 0 Q 27.2 7.1 0 0Z' fill='%231f7a4d' transform='translate(275.0 -3.7) rotate(-32)'/%3E%3Cpath d='M0 0 Q 27.2 -7.1 54.5 0 Q 27.2 7.1 0 0Z' fill='%231f7a4d' transform='translate(275.0 -3.7) rotate(32)'/%3E%3C/g%3E%3Cg transform='translate(480 300) rotate(200)'%3E%3Cpath d='M0 0 Q 140 -22 280 0' stroke='%232f9e5f' stroke-width='3' fill='none'/%3E%3Cpath d='M0 0 Q 55.8 -14.5 111.5 0 Q 55.8 14.5 0 0Z' fill='%232f9e5f' transform='translate(23.3 -3.4) rotate(-46)'/%3E%3Cpath d='M0 0 Q 55.8 -14.5 111.5 0 Q 55.8 14.5 0 0Z' fill='%232f9e5f' transform='translate(23.3 -3.4) rotate(46)'/%3E%3Cpath d='M0 0 Q 52.7 -13.7 105.5 0 Q 52.7 13.7 0 0Z' fill='%232f9e5f' transform='translate(46.7 -6.2) rotate(-45)'/%3E%3Cpath d='M0 0 Q 52.7 -13.7 105.5 0 Q 52.7 13.7 0 0Z' fill='%232f9e5f' transform='translate(46.7 -6.2) rotate(45)'/%3E%3Cpath d='M0 0 Q 49.7 -12.9 99.4 0 Q 49.7 12.9 0 0Z' fill='%232f9e5f' transform='translate(70.0 -8.4) rotate(-44)'/%3E%3Cpath d='M0 0 Q 49.7 -12.9 99.4 0 Q 49.7 12.9 0 0Z' fill='%232f9e5f' transform='translate(70.0 -8.4) rotate(44)'/%3E%3Cpath d='M0 0 Q 46.7 -12.1 93.3 0 Q 46.7 12.1 0 0Z' fill='%232f9e5f' transform='translate(93.3 -10.0) rotate(-42)'/%3E%3Cpath d='M0 0 Q 46.7 -12.1 93.3 0 Q 46.7 12.1 0 0Z' fill='%232f9e5f' transform='translate(93.3 -10.0) rotate(42)'/%3E%3Cpath d='M0 0 Q 43.6 -11.3 87.3 0 Q 43.6 11.3 0 0Z' fill='%232f9e5f' transform='translate(116.7 -10.9) rotate(-40)'/%3E%3Cpath d='M0 0 Q 43.6 -11.3 87.3 0 Q 43.6 11.3 0 0Z' fill='%232f9e5f' transform='translate(116.7 -10.9) rotate(40)'/%3E%3Cpath d='M0 0 Q 40.6 -10.6 81.2 0 Q 40.6 10.6 0 0Z' fill='%232f9e5f' transform='translate(140.0 -11.2) rotate(-39)'/%3E%3Cpath d='M0 0 Q 40.6 -10.6 81.2 0 Q 40.6 10.6 0 0Z' fill='%232f9e5f' transform='translate(140.0 -11.2) rotate(39)'/%3E%3Cpath d='M0 0 Q 37.6 -9.8 75.1 0 Q 37.6 9.8 0 0Z' fill='%232f9e5f' transform='translate(163.3 -10.9) rotate(-38)'/%3E%3Cpath d='M0 0 Q 37.6 -9.8 75.1 0 Q 37.6 9.8 0 0Z' fill='%232f9e5f' transform='translate(163.3 -10.9) rotate(38)'/%3E%3Cpath d='M0 0 Q 34.5 -9.0 69.1 0 Q 34.5 9.0 0 0Z' fill='%232f9e5f' transform='translate(186.7 -10.0) rotate(-36)'/%3E%3Cpath d='M0 0 Q 34.5 -9.0 69.1 0 Q 34.5 9.0 0 0Z' fill='%232f9e5f' transform='translate(186.7 -10.0) rotate(36)'/%3E%3Cpath d='M0 0 Q 31.5 -8.2 63.0 0 Q 31.5 8.2 0 0Z' fill='%232f9e5f' transform='translate(210.0 -8.4) rotate(-34)'/%3E%3Cpath d='M0 0 Q 31.5 -8.2 63.0 0 Q 31.5 8.2 0 0Z' fill='%232f9e5f' transform='translate(210.0 -8.4) rotate(34)'/%3E%3Cpath d='M0 0 Q 28.5 -7.4 56.9 0 Q 28.5 7.4 0 0Z' fill='%232f9e5f' transform='translate(233.3 -6.2) rotate(-33)'/%3E%3Cpath d='M0 0 Q 28.5 -7.4 56.9 0 Q 28.5 7.4 0 0Z' fill='%232f9e5f' transform='translate(233.3 -6.2) rotate(33)'/%3E%3Cpath d='M0 0 Q 25.4 -6.6 50.9 0 Q 25.4 6.6 0 0Z' fill='%232f9e5f' transform='translate(256.7 -3.4) rotate(-32)'/%3E%3Cpath d='M0 0 Q 25.4 -6.6 50.9 0 Q 25.4 6.6 0 0Z' fill='%232f9e5f' transform='translate(256.7 -3.4) rotate(32)'/%3E%3C/g%3E%3Cg transform='translate(200 470) rotate(-70)'%3E%3Cpath d='M0 0 Q 110 -18 220 0' stroke='%231f7a4d' stroke-width='3' fill='none'/%3E%3Cpath d='M0 0 Q 43.8 -11.4 87.6 0 Q 43.8 11.4 0 0Z' fill='%231f7a4d' transform='translate(18.3 -2.7) rotate(-46)'/%3E%3Cpath d='M0 0 Q 43.8 -11.4 87.6 0 Q 43.8 11.4 0 0Z' fill='%231f7a4d' transform='translate(18.3 -2.7) rotate(46)'/%3E%3Cpath d='M0 0 Q 41.4 -10.8 82.9 0 Q 41.4 10.8 0 0Z' fill='%231f7a4d' transform='translate(36.7 -4.9) rotate(-45)'/%3E%3Cpath d='M0 0 Q 41.4 -10.8 82.9 0 Q 41.4 10.8 0 0Z' fill='%231f7a4d' transform='translate(36.7 -4.9) rotate(45)'/%3E%3Cpath d='M0 0 Q 39.0 -10.2 78.1 0 Q 39.0 10.2 0 0Z' fill='%231f7a4d' transform='translate(55.0 -6.6) rotate(-44)'/%3E%3Cpath d='M0 0 Q 39.0 -10.2 78.1 0 Q 39.0 10.2 0 0Z' fill='%231f7a4d' transform='translate(55.0 -6.6) rotate(44)'/%3E%3Cpath d='M0 0 Q 36.7 -9.5 73.3 0 Q 36.7 9.5 0 0Z' fill='%231f7a4d' transform='translate(73.3 -7.8) rotate(-42)'/%3E%3Cpath d='M0 0 Q 36.7 -9.5 73.3 0 Q 36.7 9.5 0 0Z' fill='%231f7a4d' transform='translate(73.3 -7.8) rotate(42)'/%3E%3Cpath d='M0 0 Q 34.3 -8.9 68.6 0 Q 34.3 8.9 0 0Z' fill='%231f7a4d' transform='translate(91.7 -8.6) rotate(-40)'/%3E%3Cpath d='M0 0 Q 34.3 -8.9 68.6 0 Q 34.3 8.9 0 0Z' fill='%231f7a4d' transform='translate(91.7 -8.6) rotate(40)'/%3E%3Cpath d='M0 0 Q 31.9 -8.3 63.8 0 Q 31.9 8.3 0 0Z' fill='%231f7a4d' transform='translate(110.0 -8.8) rotate(-39)'/%3E%3Cpath d='M0 0 Q 31.9 -8.3 63.8 0 Q 31.9 8.3 0 0Z' fill='%231f7a4d' transform='translate(110.0 -8.8) rotate(39)'/%3E%3Cpath d='M0 0 Q 29.5 -7.7 59.0 0 Q 29.5 7.7 0 0Z' fill='%231f7a4d' transform='translate(128.3 -8.6) rotate(-38)'/%3E%3Cpath d='M0 0 Q 29.5 -7.7 59.0 0 Q 29.5 7.7 0 0Z' fill='%231f7a4d' transform='translate(128.3 -8.6) rotate(38)'/%3E%3Cpath d='M0 0 Q 27.1 -7.1 54.3 0 Q 27.1 7.1 0 0Z' fill='%231f7a4d' transform='translate(146.7 -7.8) rotate(-36)'/%3E%3Cpath d='M0 0 Q 27.1 -7.1 54.3 0 Q 27.1 7.1 0 0Z' fill='%231f7a4d' transform='translate(146.7 -7.8) rotate(36)'/%3E%3Cpath d='M0 0 Q 24.7 -6.4 49.5 0 Q 24.7 6.4 0 0Z' fill='%231f7a4d' transform='translate(165.0 -6.6) rotate(-34)'/%3E%3Cpath d='M0 0 Q 24.7 -6.4 49.5 0 Q 24.7 6.4 0 0Z' fill='%231f7a4d' transform='translate(165.0 -6.6) rotate(34)'/%3E%3Cpath d='M0 0 Q 22.4 -5.8 44.7 0 Q 22.4 5.8 0 0Z' fill='%231f7a4d' transform='translate(183.3 -4.9) rotate(-33)'/%3E%3Cpath d='M0 0 Q 22.4 -5.8 44.7 0 Q 22.4 5.8 0 0Z' fill='%231f7a4d' transform='translate(183.3 -4.9) rotate(33)'/%3E%3Cpath d='M0 0 Q 20.0 -5.2 40.0 0 Q 20.0 5.2 0 0Z' fill='%231f7a4d' transform='translate(201.7 -2.7) rotate(-32)'/%3E%3Cpath d='M0 0 Q 20.0 -5.2 40.0 0 Q 20.0 5.2 0 0Z' fill='%231f7a4d' transform='translate(201.7 -2.7) rotate(32)'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --page-size: 460px 460px;
+  --page-position: 0 0;
+}
+
+/* ---------------------------------------------------------------- Middelhavet: kalket hvitt, terrakotta og fliser */
+[data-theme="middelhav"] {
+  --bg: #fbf6ec;
+  --surface: #fffbf3;
+  --surface-2: #f0e3cb;
+  --border: rgba(31, 60, 100, 0.14);
+  --text: #23324a;
+  --muted: #6c7484;
+  --accent: #c4572e;
+  --accent-hover: #ab4825;
+  --accent-ink: #fff;
+  --accent-2: #1f5f99;
+  --heading: #c4572e;
+  --paper: #fffdf8;
+  --header-bg: rgba(251, 246, 236, 0.9);
+  --hover: rgba(31, 95, 153, 0.08);
+  --active: rgba(196, 87, 46, 0.12);
+  --shade: 40, 50, 70;
+  --stage-bg: #1a2433;
+  --photo-paper: #fff;
+  --frame: 12px;
+  --tape-display: none;
+  --tilt-scale: 0.4;
+  --hero-ink: #fff;
+  --hero-date: #f6d365;
+  --hero-shade: 20, 30, 50;
+  --hero-radius: 260px 260px 6px 6px; /* buet som et vindu */
+  --hand: "Courgette", "Caveat", cursive;
+  --hand-weight: 400;
+  --hand-scale: 0.86;
+  --display: "DM Serif Display", var(--serif);
+  --display-weight: 400;
+  --display-spacing: -0.01em;
+  --prose: "Lora", var(--serif);
+  --page-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%231f5f99' fill-opacity='.08'%3E%3Ccircle cx='32' cy='22' r='8'/%3E%3Ccircle cx='32' cy='42' r='8'/%3E%3Ccircle cx='22' cy='32' r='8'/%3E%3Ccircle cx='42' cy='32' r='8'/%3E%3Cpath d='M0 -6 L6 0 L0 6 L-6 0Z M64 -6 L70 0 L64 6 L58 0Z M0 58 L6 64 L0 70 L-6 64Z M64 58 L70 64 L64 70 L58 64Z'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='3' fill='%23c4572e' fill-opacity='.14'/%3E%3Cpath d='M0 .5 H64 M.5 0 V64' stroke='%231f5f99' stroke-opacity='.06'/%3E%3C/svg%3E");
+  --page-size: 64px 64px;
+  --page-position: 0 0;
+}
+@media (max-width: 720px) {
+  [data-theme="middelhav"] {
+    --hero-radius: 180px 180px 6px 6px;
+  }
+}
+
+/* ---------------------------------------------------------------- Ørken og safari: sand, oker og brent oransje */
+[data-theme="safari"] {
+  --bg: #f3e6cf;
+  --surface: #f9efdc;
+  --surface-2: #e9d4b0;
+  --border: rgba(80, 50, 20, 0.16);
+  --text: #3b2a1a;
+  --muted: #7a6650;
+  --accent: #c2561a;
+  --accent-hover: #a64815;
+  --accent-ink: #fff8ee;
+  --accent-2: #5e6b2d;
+  --heading: #c2561a;
+  --paper: #fcf5e8;
+  --header-bg: rgba(243, 230, 207, 0.9);
+  --hover: rgba(80, 50, 20, 0.08);
+  --active: rgba(194, 86, 26, 0.12);
+  --shade: 70, 45, 20;
+  --stage-bg: #2a1d12;
+  --photo-paper: #fbf3e3;
+  --frame: 12px;
+  --tape: rgba(140, 100, 55, 0.4);
+  --tilt-scale: 0.6;
+  --hero-ink: #fff6e8;
+  --hero-date: #ffc46b;
+  --hero-shade: 45, 25, 10;
+  --hero-radius: 3px;
+  --hand: "Zilla Slab", Georgia, serif;
+  --hand-weight: 700;
+  --hand-scale: 0.68;
+  --hand-spacing: 0.12em;
+  --hand-case: uppercase;
+  --display: "Alfa Slab One", Georgia, serif;
+  --display-weight: 400;
+  --display-spacing: 0;
+  --prose: "Zilla Slab", Georgia, serif;
+  --intro-style: normal;
+  --page-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='112'%3E%3Cg fill='none' stroke='%239c6a35' stroke-opacity='.13' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M-60 18 q 30 -9 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0' /%3E%3Cpath d='M-30 46 q 30 -9 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0' /%3E%3Cpath d='M-60 74 q 30 -9 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0' /%3E%3Cpath d='M-30 102 q 30 -9 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0' /%3E%3C/g%3E%3C/svg%3E");
+  --page-size: 240px 112px;
+  --page-position: 0 0;
+}
+
+/* ---------------------------------------------------------------- Sjø og båt: marineblått, seilduk og tauverk */
+[data-theme="sjo"] {
+  --bg: #f7f5ef;
+  --surface: #fffdf8;
+  --surface-2: #e6e9ef;
+  --border: rgba(16, 35, 63, 0.15);
+  --text: #10233f;
+  --muted: #5b6a80;
+  --accent: #1b3a6b;
+  --accent-hover: #142d54;
+  --accent-ink: #fff;
+  --accent-2: #c23a2b;
+  --heading: #1b3a6b;
+  --paper: #fff;
+  --header-bg: rgba(247, 245, 239, 0.9);
+  --hover: rgba(27, 58, 107, 0.08);
+  --active: rgba(27, 58, 107, 0.1);
+  --shade: 16, 35, 63;
+  --stage-bg: #0c1a30;
+  --photo-paper: #fff;
+  --frame: 10px;
+  --tape-display: none;
+  --tilt-scale: 0.3;
+  --hero-ink: #fff;
+  --hero-date: #f2d38a;
+  --hero-shade: 8, 20, 40;
+  --hero-radius: 4px;
+  --hand: "Oswald", "Arial Narrow", sans-serif;
+  --hand-weight: 500;
+  --hand-scale: 0.72;
+  --hand-spacing: 0.1em;
+  --hand-case: uppercase;
+  --display: "Abril Fatface", var(--serif);
+  --display-weight: 400;
+  --display-spacing: 0;
+  --prose: var(--font);
+  --intro-style: normal;
+  --page-image: repeating-linear-gradient(180deg, rgba(27, 58, 107, 0.04) 0 14px, transparent 14px 28px);
+  --page-size: auto;
+  --page-position: 0 0;
+}
+/* Tauverk under overskriftene */
+[data-theme="sjo"] .section-title::after {
+  content: "";
+  display: block;
+  width: 130px;
+  height: 7px;
+  margin: 12px auto 0;
+  border-radius: 4px;
+  background: repeating-linear-gradient(60deg, #b08a5a 0 4px, #e0c796 4px 8px);
+}
+[data-theme="sjo"] .polaroid {
+  outline: 2px solid var(--accent);
+  outline-offset: -6px;
+}
+
+/* ---------------------------------------------------------------- Høst: rust, kobber og løv */
+[data-theme="host"] {
+  --bg: #f2e6d6;
+  --surface: #f8efe3;
+  --surface-2: #e8d5bd;
+  --border: rgba(70, 40, 20, 0.15);
+  --text: #3a2416;
+  --muted: #7d634e;
+  --accent: #b5481c;
+  --accent-hover: #9c3d17;
+  --accent-ink: #fff7ee;
+  --accent-2: #5f6b2b;
+  --heading: #b5481c;
+  --paper: #fcf6ee;
+  --header-bg: rgba(242, 230, 214, 0.9);
+  --hover: rgba(70, 40, 20, 0.08);
+  --active: rgba(181, 72, 28, 0.12);
+  --shade: 70, 40, 20;
+  --stage-bg: #2a1a10;
+  --photo-paper: #fffaf2;
+  --tape: rgba(196, 140, 70, 0.5);
+  --hero-ink: #fff6ea;
+  --hero-date: #ffc06b;
+  --hero-shade: 45, 22, 10;
+  --hand: "Kalam", "Caveat", cursive;
+  --hand-weight: 700;
+  --hand-scale: 0.82;
+  --display: "Young Serif", var(--serif);
+  --display-weight: 400;
+  --display-spacing: -0.01em;
+  --page-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cg opacity='.2'%3E%3Cg transform='translate(40 50) rotate(25) scale(1.0)' fill='%23c0561f'%3E%3Cpath d='M0 -20 C 12 -12 14 6 0 20 C -14 6 -12 -12 0 -20Z'/%3E%3Cpath d='M0 -14 V 27' stroke='%23c0561f' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(190 30) rotate(-40) scale(0.8)' fill='%23d99a2b'%3E%3Cpath d='M0 -20 C 12 -12 14 6 0 20 C -14 6 -12 -12 0 -20Z'/%3E%3Cpath d='M0 -14 V 27' stroke='%23d99a2b' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(250 150) rotate(70) scale(1.1)' fill='%237a7f2a'%3E%3Cpath d='M0 -20 C 12 -12 14 6 0 20 C -14 6 -12 -12 0 -20Z'/%3E%3Cpath d='M0 -14 V 27' stroke='%237a7f2a' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(110 170) rotate(-15) scale(0.9)' fill='%239c3d17'%3E%3Cpath d='M0 -20 C 12 -12 14 6 0 20 C -14 6 -12 -12 0 -20Z'/%3E%3Cpath d='M0 -14 V 27' stroke='%239c3d17' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(40 250) rotate(120) scale(0.8)' fill='%23d99a2b'%3E%3Cpath d='M0 -20 C 12 -12 14 6 0 20 C -14 6 -12 -12 0 -20Z'/%3E%3Cpath d='M0 -14 V 27' stroke='%23d99a2b' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(220 260) rotate(10) scale(1.0)' fill='%23c0561f'%3E%3Cpath d='M0 -20 C 12 -12 14 6 0 20 C -14 6 -12 -12 0 -20Z'/%3E%3Cpath d='M0 -14 V 27' stroke='%23c0561f' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --page-size: 300px 300px;
+  --page-position: 0 0;
+}
+
+/* ---------------------------------------------------------------- Vår og påske: pastell, kyllinggult og blomster */
+[data-theme="var"] {
+  --bg: #fbf9ee;
+  --surface: #fffef7;
+  --surface-2: #eff0d8;
+  --border: rgba(60, 60, 40, 0.14);
+  --text: #35362a;
+  --muted: #74765f;
+  --accent: #f2c230;
+  --accent-hover: #e6b31c;
+  --accent-ink: #35362a;
+  --accent-2: #8a63c4;
+  --heading: #4f8a33;
+  --paper: #fff;
+  --header-bg: rgba(251, 249, 238, 0.9);
+  --hover: rgba(79, 138, 51, 0.09);
+  --active: rgba(242, 194, 48, 0.2);
+  --shade: 70, 70, 40;
+  --stage-bg: #2c2d22;
+  --photo-paper: #fff;
+  --tape: rgba(190, 225, 140, 0.75);
+  --hero-ink: #fff;
+  --hero-date: #ffe58a;
+  --hero-shade: 40, 40, 20;
+  --hero-radius: 20px;
+  --hand: "Dancing Script", "Caveat", cursive;
+  --hand-weight: 700;
+  --hand-scale: 1;
+  --display: "Quicksand", var(--font);
+  --display-weight: 700;
+  --display-spacing: -0.01em;
+  --prose: "Quicksand", var(--font);
+  --intro-style: normal;
+  --page-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='210' height='210'%3E%3Cg opacity='.5'%3E%3Ccircle cx='30.0' cy='30.8' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='34.9' cy='34.4' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='33.1' cy='40.2' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='26.9' cy='40.2' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='25.1' cy='34.4' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='30' cy='36' r='2.6' fill='%23f2b705'/%3E%3Ccircle cx='140.0' cy='16.8' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='144.9' cy='20.4' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='143.1' cy='26.2' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='136.9' cy='26.2' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='135.1' cy='20.4' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='140' cy='22' r='2.6' fill='%23f2b705'/%3E%3Ccircle cx='96.0' cy='104.8' r='4.2' fill='%23ffe27a'/%3E%3Ccircle cx='100.9' cy='108.4' r='4.2' fill='%23ffe27a'/%3E%3Ccircle cx='99.1' cy='114.2' r='4.2' fill='%23ffe27a'/%3E%3Ccircle cx='92.9' cy='114.2' r='4.2' fill='%23ffe27a'/%3E%3Ccircle cx='91.1' cy='108.4' r='4.2' fill='%23ffe27a'/%3E%3Ccircle cx='96' cy='110' r='2.6' fill='%23f2b705'/%3E%3Ccircle cx='184.0' cy='134.8' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='188.9' cy='138.4' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='187.1' cy='144.2' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='180.9' cy='144.2' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='179.1' cy='138.4' r='4.2' fill='%23f4a3c0'/%3E%3Ccircle cx='184' cy='140' r='2.6' fill='%23f2b705'/%3E%3Ccircle cx='36.0' cy='164.8' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='40.9' cy='168.4' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='39.1' cy='174.2' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='32.9' cy='174.2' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='31.1' cy='168.4' r='4.2' fill='%23c3a6e8'/%3E%3Ccircle cx='36' cy='170' r='2.6' fill='%23f2b705'/%3E%3Cg fill='%238cc152'%3E%3Ccircle cx='80' cy='40' r='2'/%3E%3Ccircle cx='170' cy='80' r='2'/%3E%3Ccircle cx='120' cy='180' r='2'/%3E%3Ccircle cx='20' cy='110' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --page-size: 210px 210px;
+  --page-position: 0 0;
+}
+[data-theme="var"] .story-text p {
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- 17. mai: rødt, hvitt, blått og flaggband */
+[data-theme="syttende-mai"] {
+  --bg: #fbfaf7;
+  --surface: #fff;
+  --surface-2: #eceef4;
+  --border: rgba(20, 33, 61, 0.14);
+  --text: #14213d;
+  --muted: #5b6478;
+  --accent: #c8102e;
+  --accent-hover: #a50d26;
+  --accent-ink: #fff;
+  --accent-2: #00205b;
+  --heading: #c8102e;
+  --paper: #fff;
+  --header-bg: rgba(251, 250, 247, 0.92);
+  --hover: rgba(0, 32, 91, 0.07);
+  --active: rgba(200, 16, 46, 0.1);
+  --shade: 20, 33, 61;
+  --stage-bg: #0d1630;
+  --photo-paper: #fff;
+  --tape: rgba(0, 32, 91, 0.55);
+  --hero-ink: #fff;
+  --hero-date: #ffd2d8;
+  --hero-shade: 10, 18, 45;
+  --hero-radius: 8px;
+  --hand: "Bungee", Impact, sans-serif;
+  --hand-weight: 400;
+  --hand-scale: 0.62;
+  --hand-spacing: 0.02em;
+  --display: "Bricolage Grotesque", var(--font);
+  --display-weight: 700;
+  --display-spacing: -0.03em;
+  --prose: var(--font);
+  --intro-style: normal;
+  --page-image: none;
+}
+/* Flaggband som henger under toppmenyen */
+[data-theme="syttende-mai"] .site-header::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 26px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='26'%3E%3Cpath d='M0 2 Q 42 7 84 2' stroke='%238b8f99' stroke-width='1.4' fill='none'/%3E%3Cpath d='M3 3 L25 4.4 L13 24Z' fill='%23c8102e'/%3E%3Cpath d='M31 4.6 L53 4.6 L42 25Z' fill='%23fff' stroke='%23c9ccd4' stroke-width='1'/%3E%3Cpath d='M59 4.4 L81 3 L71 24Z' fill='%2300205b'/%3E%3C/svg%3E") repeat-x 0 0 / 84px 26px;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- Festival og konsert: svart scene og neon */
+[data-theme="festival"] {
+  --bg: #0b0a12;
+  --surface: #15131f;
+  --surface-2: #221f31;
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #f1eefc;
+  --muted: #a19cba;
+  --accent: #ff2e9a;
+  --accent-hover: #ff5bb1;
+  --accent-ink: #fff;
+  --accent-2: #29f0ff;
+  --heading: #ff2e9a;
+  --paper: #15131f;
+  --header-bg: rgba(11, 10, 18, 0.86);
+  --hover: rgba(255, 255, 255, 0.08);
+  --active: rgba(255, 46, 154, 0.16);
+  --shade: 0, 0, 0;
+  --stage-bg: #050409;
+  --photo-paper: #f4f2fb;
+  --photo-ink: #15131f;
+  --frame: 9px;
+  --tape: rgba(41, 240, 255, 0.85);
+  --tilt-scale: 0.8;
+  --hero-ink: #fff;
+  --hero-date: #29f0ff;
+  --hero-shade: 10, 4, 20;
+  --hero-radius: 4px;
+  --hand: "Rubik Mono One", Impact, sans-serif;
+  --hand-weight: 400;
+  --hand-scale: 0.56;
+  --hand-spacing: 0;
+  --hand-case: uppercase;
+  --display: "Rubik", var(--font);
+  --display-weight: 800;
+  --display-spacing: -0.02em;
+  --display-case: uppercase;
+  --prose: "Rubik", var(--font);
+  --intro-style: normal;
+  --page-image:
+    radial-gradient(ellipse 55% 60% at 12% 0, rgba(255, 46, 154, 0.22), transparent 70%),
+    radial-gradient(ellipse 50% 55% at 88% 0, rgba(41, 240, 255, 0.16), transparent 70%),
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1.5px);
+  --page-size: 100% 1100px, 100% 1100px, 24px 24px;
+  --page-position: 0 0, 0 0, 0 0;
+  --page-repeat: no-repeat, no-repeat, repeat;
+  color-scheme: dark;
+}
+[data-theme="festival"] .hand {
+  word-spacing: -0.35em;
+}
+/* Neonglød */
+[data-theme="festival"] .section-title,
+[data-theme="festival"] .story-title,
+[data-theme="festival"] .hero-dates {
+  text-shadow: 0 0 14px currentColor;
+}
+
+/* ---------------------------------------------------------------- Barn og familie: fargestifter og primærfarger */
+[data-theme="barn"] {
+  --bg: #fffdf6;
+  --surface: #fff;
+  --surface-2: #fdf0d5;
+  --border: rgba(36, 50, 74, 0.14);
+  --text: #24324a;
+  --muted: #6c768a;
+  --accent: #e63946;
+  --accent-hover: #cc2f3c;
+  --accent-ink: #fff;
+  --accent-2: #2a9d4b;
+  --heading: #1d6fd8;
+  --paper: #fff;
+  --header-bg: rgba(255, 253, 246, 0.9);
+  --hover: rgba(29, 111, 216, 0.08);
+  --active: rgba(230, 57, 70, 0.1);
+  --shade: 36, 50, 74;
+  --stage-bg: #1b2436;
+  --photo-paper: #fff;
+  --photo-ink: #24324a;
+  --frame: 12px;
+  --tape: rgba(29, 111, 216, 0.45);
+  --tilt-scale: 1.4;
+  --hero-ink: #fff;
+  --hero-date: #ffd43b;
+  --hero-shade: 20, 30, 50;
+  --hero-radius: 26px;
+  --hand: "Gaegu", "Comic Sans MS", cursive;
+  --hand-weight: 700;
+  --hand-scale: 1.12;
+  --hand-spacing: -0.03em;
+  --display: "Baloo 2", var(--font);
+  --display-weight: 800;
+  --display-spacing: -0.01em;
+  --prose: "Baloo 2", var(--font);
+  --intro-style: normal;
+  --page-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cg fill='none' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round' opacity='.17'%3E%3Cpath d='M24 60 q 12 -22 24 0 t 24 0 t 24 0' stroke='%23e63946'/%3E%3Cpath d='M220 40 l 7 15 16 2 -12 11 3 16 -14 -8 -14 8 3 -16 -12 -11 16 -2Z' stroke='%23f4b400'/%3E%3Ccircle cx='90' cy='200' r='16' stroke='%231d6fd8'/%3E%3Cpath d='M90 172 v-8 M90 228 v8 M62 200 h-8 M118 200 h8 M70 180 l-6 -6 M110 220 l6 6 M70 220 l-6 6 M110 180 l6 -6' stroke='%231d6fd8'/%3E%3Cpath d='M230 210 l 14 -14 m -14 0 l 14 14' stroke='%232a9d4b'/%3E%3Cpath d='M170 290 l 12 -16 12 16 12 -16 12 16' stroke='%23ff8c1a'/%3E%3Cpath d='M270 130 c 10 -14 26 -4 16 8 c -8 10 -22 2 -14 -8' stroke='%239b5de5'/%3E%3C/g%3E%3C/svg%3E");
+  --page-size: 320px 320px;
+  --page-position: 0 0;
+}
+/* Hvert bilde får sin egen farge på rammen */
+[data-theme="barn"] .story:nth-child(4n + 1) {
+  --photo-paper: #ffd43b;
+}
+[data-theme="barn"] .story:nth-child(4n + 2) {
+  --photo-paper: #8ecae6;
+}
+[data-theme="barn"] .story:nth-child(4n + 3) {
+  --photo-paper: #ffadad;
+}
+[data-theme="barn"] .story:nth-child(4n + 4) {
+  --photo-paper: #b9e769;
+}
+[data-theme="barn"] .polaroid {
+  border-radius: 14px;
+}
+[data-theme="barn"] .polaroid img {
+  border-radius: 8px;
+}
+[data-theme="barn"] .story-text p {
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------- Natt og nordlys: mørk himmel, stjerner og nordlys */
+[data-theme="nordlys"] {
+  --bg: #071a22;
+  --surface: #0d2630;
+  --surface-2: #15343f;
+  --border: rgba(200, 255, 240, 0.12);
+  --text: #e3f2ee;
+  --muted: #8fb0aa;
+  --accent: #3ee6a8;
+  --accent-hover: #6cf0bf;
+  --accent-ink: #04221a;
+  --accent-2: #c2a3ff;
+  --heading: #6cf0bf;
+  --paper: #0d2630;
+  --header-bg: rgba(7, 26, 34, 0.86);
+  --hover: rgba(200, 255, 240, 0.08);
+  --active: rgba(62, 230, 168, 0.14);
+  --shade: 0, 0, 0;
+  --stage-bg: #030c10;
+  --photo-paper: rgba(227, 242, 238, 0.07);
+  --photo-ink: var(--text);
+  --frame: 8px;
+  --tape-display: none;
+  --tilt-scale: 0;
+  --hero-ink: #fff;
+  --hero-date: #8ff5cf;
+  --hero-shade: 2, 12, 18;
+  --hero-radius: 4px;
+  --hand: "Marcellus", var(--serif);
+  --hand-weight: 400;
+  --hand-scale: 0.66;
+  --hand-spacing: 0.14em;
+  --hand-case: uppercase;
+  --display: "Spectral", var(--serif);
+  --display-weight: 300;
+  --display-spacing: -0.01em;
+  --prose: "Spectral", var(--serif);
+  --page-image:
+    radial-gradient(ellipse 70% 45% at 18% 0, rgba(62, 230, 168, 0.34), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 82% 8%, rgba(194, 163, 255, 0.26), transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.75) 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.4) 1px, transparent 1.5px);
+  --page-size: 100% 1000px, 100% 1000px, 97px 97px, 61px 61px;
+  --page-position: 0 0, 0 0, 0 0, 30px 40px;
+  --page-repeat: no-repeat, no-repeat, repeat, repeat;
+  color-scheme: dark;
+}
+[data-theme="nordlys"] .polaroid {
+  outline: 1px solid rgba(200, 255, 240, 0.18);
+}
+[data-theme="nordlys"] .hero-title {
+  text-shadow: 0 0 40px rgba(62, 230, 168, 0.35);
 }
 
 /* ---------------------------------------------------------------- Gamle dager: svarte albumsider og fotohjørner */
