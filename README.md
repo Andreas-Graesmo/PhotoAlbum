@@ -5,6 +5,7 @@ Et passordbeskyttet fotoalbum. Selve nettsiden ligger på **GitHub Pages**, mens
 ```
 site/      Nettsiden (GitHub Pages)
   index.html   Albumet for besøkende: meny, høydepunkter, lysbildefremvisning
+  tv.html      Åpnes i nettleseren på en TV, og styres fra mobilen
   admin.html   Admin: lag album, last opp mappe, velg høydepunkter, rekkefølge
   config.js    Navn på siden og adressen til API-et
 worker/    API-et (Cloudflare Worker) som sjekker passord og serverer bildene
@@ -70,6 +71,17 @@ Nettsider kan ikke sende bilder rett til en TV fra iPhone, så bruk **Skjermspei
 3. Bildene blar ikke av seg selv. Vil du ha automatisk fremvisning, trykker du på ▶ (knappen blir farget når den er på). Den stopper igjen når du går ut av fullskjerm. Skjermen holdes våken så lenge fremvisningen står i fullskjerm.
 
 **Tips:** Velg *Del → Legg til på Hjem-skjerm* i Safari. Åpnet derfra vises albumet uten Safaris adresselinje, så bildet blir enda litt større. Du må logge inn én gang til der.
+
+### Med TV-ens egen nettleser (fyller hele skjermen)
+
+Har TV-en en nettleser (Samsung, LG, Android/Google TV), kan den vise bildene selv mens mobilen er fjernkontroll:
+
+1. Åpne `https://<brukernavn>.github.io/<repo>/tv.html` i nettleseren på TV-en. Store og små bokstaver må stemme. Lagre gjerne siden som bokmerke. TV-en viser en firesifret kode.
+2. Åpne albumet på mobilen, trykk på TV-knappen under bildet og skriv inn koden. TV-en trenger ikke passordet.
+3. Bla, velg bilder og bytt album på mobilen – TV-en følger med. ▶ starter automatisk blaing på TV-en, og den fortsetter selv om mobilen låses. Piltastene og OK på TV-ens fjernkontroll virker også.
+4. Trykk på TV-knappen igjen for å koble fra. TV-en viser da en ny kode.
+
+Dette bruker Cloudflare Durable Objects, som er inkludert i gratisplanen. TV-knappen vises bare når Workeren er publisert med støtte for det (`npx wrangler deploy`).
 
 ## Lokal testing
 

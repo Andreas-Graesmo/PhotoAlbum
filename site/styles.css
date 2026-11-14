@@ -608,6 +608,84 @@ label {
   translate: 0 56px; /* høyden på miniatyrene, så bildeteksten havner nederst */
 }
 
+/* ---------------------------------------------------------------- visning på TV */
+
+.slideshow.is-remote .tv-btn,
+.slideshow.is-remote .tv-btn:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.tv-status {
+  justify-self: start;
+  margin: 0;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 500;
+}
+.slideshow.is-fullscreen .tv-status {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  z-index: 3;
+  transition: opacity 0.3s;
+}
+.slideshow.is-fullscreen.is-idle .tv-status {
+  opacity: 0;
+}
+
+.tv-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(20, 14, 9, 0.6);
+  cursor: auto;
+}
+.tv-dialog {
+  width: min(400px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 26px 24px 22px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  font: 15px/1.55 var(--font);
+  text-shadow: none;
+}
+.tv-dialog h2 {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1;
+}
+.tv-dialog ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 1.3em;
+}
+.tv-address {
+  display: block;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.tv-dialog input {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+.tv-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 /* Tips om å snu mobilen når den står på høykant i fullskjerm */
 .rotate-hint {
   display: none;

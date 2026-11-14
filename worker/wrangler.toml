@@ -11,6 +11,15 @@ ALLOWED_ORIGINS = "https://andreas-graesmo.github.io,http://localhost:8080,http:
 binding = "PHOTOS"
 bucket_name = "photo-album"
 
+# Visning på TV: ett «rom» per kode som kobler mobilen og TV-en sammen (se TvRoom i src/index.js).
+[[durable_objects.bindings]]
+name = "TV"
+class_name = "TvRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TvRoom"]
+
 # Hemmeligheter settes med:
 #   npx wrangler secret put VIEWER_PASSWORD
 #   npx wrangler secret put ADMIN_PASSWORD
