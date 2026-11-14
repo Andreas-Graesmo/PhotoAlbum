@@ -12,7 +12,7 @@
   --radius: 10px;
   --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --serif: "Fraunces", Georgia, serif;
-  --gutter: clamp(16px, 4vw, 40px);
+  --gutter: max(clamp(16px, 4vw, 40px), env(safe-area-inset-left), env(safe-area-inset-right));
   color-scheme: dark;
 }
 
@@ -509,39 +509,130 @@ label {
   object-fit: cover;
 }
 
-/* Fullskjerm (ekte og iPhone-varianten) */
-.slideshow:fullscreen,
-.slideshow.pseudo-fullscreen {
-  background: #000;
-  padding: 12px;
+/* Fullskjerm (ekte og iPhone-varianten). Bildet fyller hele skjermen, og kontrollene ligger
+   oppå bildet og skjuler seg selv – slik at mest mulig av en TV fylles når mobilen speiles dit. */
+.slideshow.is-fullscreen {
+  position: relative;
   grid-template-rows: 1fr auto auto;
+  gap: 0;
+  width: 100%;
   height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
 }
 .slideshow.pseudo-fullscreen {
+  /* iPhone støtter ikke ekte fullskjerm for elementer */
   position: fixed;
   inset: 0;
   z-index: 100;
   height: 100dvh;
-  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
 }
-.slideshow:fullscreen .stage,
-.slideshow.pseudo-fullscreen .stage {
+.slideshow.is-fullscreen.is-idle {
+  cursor: none;
+}
+.slideshow.is-fullscreen .stage {
+  position: absolute;
+  inset: 0;
   height: auto;
-  min-height: 0;
+  margin: 0;
   border-radius: 0;
   background: #000;
 }
-.slideshow:-webkit-full-screen {
-  background: #000;
-  padding: 12px;
-  grid-template-rows: 1fr auto auto;
-  width: 100%;
-  height: 100%;
+.slideshow.is-fullscreen::after {
+  /* Mørk toning bak kontrollene */
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 190px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+  transition: opacity 0.3s;
 }
-.slideshow:-webkit-full-screen .stage {
-  height: auto;
-  min-height: 0;
-  background: #000;
+.slideshow.is-fullscreen.is-idle::after {
+  opacity: 0;
+}
+.slideshow.is-fullscreen.is-idle.has-caption::after {
+  opacity: 0.7;
+}
+.slideshow.is-fullscreen .stage-bar,
+.slideshow.is-fullscreen .thumb-strip {
+  z-index: 2;
+  min-width: 0;
+  padding-left: max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
+}
+.slideshow.is-fullscreen .stage-bar {
+  grid-row: 2;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  transition: translate 0.3s;
+}
+.slideshow.is-fullscreen .thumb-strip {
+  grid-row: 3;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  scrollbar-width: none;
+}
+.slideshow.is-fullscreen .thumb-strip::-webkit-scrollbar {
+  display: none;
+}
+.slideshow.is-fullscreen .stage-counter,
+.slideshow.is-fullscreen .stage-caption {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.slideshow.is-fullscreen .btn-icon:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.slideshow.is-fullscreen .stage-nav,
+.slideshow.is-fullscreen .stage-counter,
+.slideshow.is-fullscreen .stage-controls,
+.slideshow.is-fullscreen .thumb-strip {
+  transition: opacity 0.3s, background 0.2s;
+}
+/* Etter noen sekunder uten aktivitet står bare bildet (og bildeteksten) igjen */
+.slideshow.is-fullscreen.is-idle .stage-nav,
+.slideshow.is-fullscreen.is-idle .stage-counter,
+.slideshow.is-fullscreen.is-idle .stage-controls,
+.slideshow.is-fullscreen.is-idle .thumb-strip {
+  opacity: 0;
+  pointer-events: none;
+}
+.slideshow.is-fullscreen.is-idle .stage-bar {
+  translate: 0 56px; /* høyden på miniatyrene, så bildeteksten havner nederst */
+}
+
+/* Tips om å snu mobilen når den står på høykant i fullskjerm */
+.rotate-hint {
+  display: none;
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  .slideshow.is-fullscreen .rotate-hint {
+    display: block;
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    left: 50%;
+    z-index: 3;
+    translate: -50% 0;
+    margin: 0;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font: 500 14px var(--font);
+    white-space: nowrap;
+    pointer-events: none;
+    animation: rotate-hint 6s forwards;
+  }
+}
+@keyframes rotate-hint {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1168,14 +1259,6 @@ body.journal {
 }
 .journal .thumb {
   background: var(--surface-2);
-}
-.journal .slideshow:fullscreen .stage-counter,
-.journal .slideshow:fullscreen .stage-caption,
-.journal .slideshow.pseudo-fullscreen .stage-counter,
-.journal .slideshow.pseudo-fullscreen .stage-caption,
-.journal .slideshow:fullscreen .btn-icon,
-.journal .slideshow.pseudo-fullscreen .btn-icon {
-  color: #f5eddf;
 }
 .journal .empty-state h1 {
   font-family: var(--hand);

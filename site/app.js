@@ -259,7 +259,12 @@ function renderHeader(activeId) {
 function createSlideshow(container, photos) {
   let index = 0;
   let timer = null;
+  let idleTimer = null;
+  let wakeLock = null;
+  let wakeLockPending = false;
+  let destroyed = false;
   const INTERVAL = 5000;
+  const IDLE_AFTER = 3000;
 
   const img = el("img", { class: "stage-img", alt: "" });
   const caption = el("p", { class: "stage-caption" });
@@ -291,8 +296,17 @@ function createSlideshow(container, photos) {
     stage,
     el("div", { class: "stage-bar" }, counter, caption, el("div", { class: "stage-controls" }, playBtn, fsBtn)),
     strip,
+    el("p", { class: "rotate-hint" }, "Snu mobilen på siden for større bilder"),
   );
   container.append(root);
+
+  // I fullskjerm skjules kontrollene etter litt, og kommer tilbake når man rører noe
+  root.addEventListener("pointermove", (e) => {
+    if (e.pointerType === "mouse") wake();
+  });
+  root.addEventListener("click", (e) => {
+    if (e.target.closest("button")) wake();
+  });
 
   // Sveip på mobil
   let startX = null;
@@ -304,6 +318,14 @@ function createSlideshow(container, photos) {
     const dx = e.clientX - startX;
     startX = null;
     if (Math.abs(dx) > 40) go(index + (dx < 0 ? 1 : -1));
+    else if (Math.abs(dx) < 10 && isFullscreen() && !e.target.closest("button")) {
+      // Trykk på bildet viser eller skjuler kontrollene
+      if (root.classList.contains("is-idle")) wake();
+      else goIdle();
+    }
+  });
+  stage.addEventListener("pointercancel", () => {
+    startX = null;
   });
 
   function onKey(e) {
@@ -318,14 +340,60 @@ function createSlideshow(container, photos) {
     } else if (e.key.toLowerCase() === "f") toggleFullscreen();
     else if (e.key === "Escape" && root.classList.contains("pseudo-fullscreen")) toggleFullscreen();
     else return;
+    wake();
   }
   document.addEventListener("keydown", onKey);
 
   function onFsChange() {
-    updateFsButton();
+    const fs = isFullscreen();
+    root.classList.toggle("is-fullscreen", fs);
+    if (fs) wake();
+    else {
+      clearTimeout(idleTimer);
+      root.classList.remove("is-idle");
+    }
+    fsBtn.replaceChildren(icon(fs ? "shrink" : "expand"));
+    fsBtn.setAttribute("aria-label", fs ? "Avslutt fullskjerm" : "Fullskjerm");
+    syncWakeLock();
   }
   document.addEventListener("fullscreenchange", onFsChange);
   document.addEventListener("webkitfullscreenchange", onFsChange);
+  document.addEventListener("visibilitychange", syncWakeLock);
+
+  function wake() {
+    clearTimeout(idleTimer);
+    root.classList.remove("is-idle");
+    if (isFullscreen()) idleTimer = setTimeout(goIdle, IDLE_AFTER);
+  }
+
+  function goIdle() {
+    clearTimeout(idleTimer);
+    if (isFullscreen()) root.classList.add("is-idle");
+  }
+
+  /** Hindrer at skjermen slukker (og TV-speilingen stopper) under fullskjerm og avspilling. */
+  async function syncWakeLock() {
+    if (!navigator.wakeLock || wakeLockPending) return;
+    const want = () => !destroyed && (isFullscreen() || !!timer) && document.visibilityState === "visible";
+    if (want() && !wakeLock) {
+      wakeLockPending = true;
+      try {
+        const lock = await navigator.wakeLock.request("screen");
+        lock.addEventListener("release", () => {
+          if (wakeLock === lock) wakeLock = null;
+        });
+        wakeLock = lock;
+      } catch {
+        /* f.eks. lav batteri – da slukker skjermen som vanlig */
+      }
+      wakeLockPending = false;
+      if (!want()) syncWakeLock();
+    } else if (!want() && wakeLock) {
+      const lock = wakeLock;
+      wakeLock = null;
+      lock.release().catch(() => {});
+    }
+  }
 
   function go(i) {
     index = (i + photos.length) % photos.length;
@@ -335,6 +403,7 @@ function createSlideshow(container, photos) {
     img.src = p.src;
     img.alt = p.caption || "";
     caption.textContent = p.caption || "";
+    root.classList.toggle("has-caption", !!p.caption);
     counter.textContent = `${index + 1} / ${photos.length}`;
     thumbs.forEach((t, j) => t.classList.toggle("is-active", j === index));
     const t = thumbs[index];
@@ -362,6 +431,7 @@ function createSlideshow(container, photos) {
     playBtn.replaceChildren(icon(timer ? "pause" : "play"));
     playBtn.setAttribute("aria-label", timer ? "Pause" : "Spill av");
     root.classList.toggle("is-playing", !!timer);
+    syncWakeLock();
   }
 
   function isFullscreen() {
@@ -379,7 +449,7 @@ function createSlideshow(container, photos) {
     } else if (root.classList.contains("pseudo-fullscreen")) {
       root.classList.remove("pseudo-fullscreen");
       document.body.classList.remove("no-scroll");
-      updateFsButton();
+      onFsChange();
     } else if (root.requestFullscreen) {
       root.requestFullscreen().catch(pseudoFullscreen);
     } else if (root.webkitRequestFullscreen) {
@@ -394,13 +464,7 @@ function createSlideshow(container, photos) {
   function pseudoFullscreen() {
     root.classList.add("pseudo-fullscreen");
     document.body.classList.add("no-scroll");
-    updateFsButton();
-  }
-
-  function updateFsButton() {
-    const fs = isFullscreen();
-    fsBtn.replaceChildren(icon(fs ? "shrink" : "expand"));
-    fsBtn.setAttribute("aria-label", fs ? "Avslutt fullskjerm" : "Fullskjerm");
+    onFsChange();
   }
 
   go(0);
@@ -410,9 +474,13 @@ function createSlideshow(container, photos) {
     enterFullscreen,
     destroy() {
       clearInterval(timer);
+      clearTimeout(idleTimer);
+      destroyed = true;
+      syncWakeLock();
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("fullscreenchange", onFsChange);
       document.removeEventListener("webkitfullscreenchange", onFsChange);
+      document.removeEventListener("visibilitychange", syncWakeLock);
       document.body.classList.remove("no-scroll");
     },
   };
