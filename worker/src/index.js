@@ -9,7 +9,13 @@
  *
  * Hemmeligheter: VIEWER_PASSWORD, ADMIN_PASSWORD, TOKEN_SECRET
  * Variabler:     ALLOWED_ORIGINS (kommaseparert)
+ *
+ * Visning på TV (binding TV, Durable Object TvRoom): TV-siden oppretter et «rom» og viser en
+ * firesifret kode. En innlogget mobil kobler seg til rommet med koden og styrer hva TV-en viser.
+ * TV-en trenger ikke passord: den får bare de signerte bildelenkene mobilen sender.
  */
+
+import { DurableObject } from "cloudflare:workers";
 
 const ALBUMS_KEY = "meta/albums.json";
 const albumKey = (id) => `meta/album-${id}.json`;
@@ -21,6 +27,8 @@ const ADMIN_TOKEN_TTL = 12 * 3600;
 const IMG_WINDOW = 7 * DAY; // signerte bilde-URLer er stabile i en uke (bra for cache)
 
 const ID_RE = /^[a-z0-9-]{1,64}$/;
+const TV_CODE_RE = /^\d{4}$/;
+const TV_ROOM_TTL = 12 * 3600 * 1000; // ubrukte TV-rom ryddes bort etter et halvt døgn
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -34,6 +42,17 @@ export default {
     const cors = corsHeaders(request, env);
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: cors });
+    }
+    if (request.headers.get("Upgrade") === "websocket") {
+      // WebSocket-svar kan ikke få CORS-hoder lagt på i etterkant, så de håndteres for seg
+      try {
+        return await tvSocket(request, env);
+      } catch (err) {
+        if (!(err instanceof HttpError)) console.error(err);
+        return new Response(err instanceof HttpError ? err.message : "Intern feil", {
+          status: err instanceof HttpError ? err.status : 500,
+        });
+      }
     }
     try {
       const res = await route(request, env);
@@ -67,7 +86,12 @@ async function route(request, env) {
 
   if (a === "login" && method === "POST") return login(request, env);
 
+  // TV-en er ikke innlogget når den ber om en kode
+  if (a === "tv" && b === "rooms" && !c && method === "POST") return createTvRoom(env);
+
   const session = await authenticate(request, env);
+
+  if (a === "tv" && b === "pair" && !c && method === "POST") return pairTv(request, env);
 
   if (a === "session" && method === "GET") return json({ role: session.role });
 
@@ -135,6 +159,141 @@ async function authenticate(request, env) {
   return data;
 }
 
+// ---------------------------------------------------------------- visning på TV
+
+function tvRoom(env, code) {
+  if (!env.TV) throw new HttpError(404, "Visning på TV er ikke slått på");
+  if (typeof code !== "string" || !TV_CODE_RE.test(code)) throw new HttpError(400, "Koden skal ha fire sifre");
+  return env.TV.get(env.TV.idFromName(code));
+}
+
+/** TV-en ber om et rom og får en ledig kode pluss en nøkkel som bare den kjenner. */
+async function createTvRoom(env) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 10000).padStart(4, "0");
+    const room = await tvRoom(env, code).create();
+    if (room) return json({ code, key: room.key }, 201);
+  }
+  throw new HttpError(503, "Fant ingen ledig kode, prøv igjen");
+}
+
+/** En innlogget mobil bytter koden på TV-skjermen mot en billett til rommet. */
+async function pairTv(request, env) {
+  const { code } = await readBody(request);
+  const room = await tvRoom(env, typeof code === "string" ? code.trim() : code).pair();
+  if (!room) throw new HttpError(404, "Fant ingen TV med den koden");
+  return json({ ticket: room.ticket });
+}
+
+/** WebSocket: /api/tv/ws?code=1234&role=tv|remote&secret=… */
+async function tvSocket(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname !== "/api/tv/ws") throw new HttpError(404, "Finnes ikke");
+  const origin = request.headers.get("Origin");
+  const allowed = (env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim());
+  if (origin && !allowed.includes(origin)) throw new HttpError(403, "Ikke tillatt");
+  return tvRoom(env, url.searchParams.get("code")).fetch(request);
+}
+
+/**
+ * Ett rom per kode. Rommet videresender meldinger mellom TV-en og mobilene som styrer den,
+ * og forteller begge parter hvem som er til stede. Det lagrer ingen bilder eller albumdata.
+ */
+export class TvRoom extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    // Lar klientene holde forbindelsen i live uten å vekke rommet
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
+  }
+
+  async create() {
+    const createdAt = await this.ctx.storage.get("createdAt");
+    const busy = this.openSockets("tv").length > 0 || (createdAt && Date.now() - createdAt < 15000);
+    if (busy) return null;
+    for (const ws of this.ctx.getWebSockets()) closeSocket(ws, 4001, "Rommet er erstattet");
+    const key = randomId(24);
+    await this.ctx.storage.put({ key, ticket: randomId(24), createdAt: Date.now() });
+    await this.ctx.storage.setAlarm(Date.now() + TV_ROOM_TTL);
+    return { key };
+  }
+
+  async pair() {
+    if (!this.openSockets("tv").length) return null;
+    return { ticket: await this.ctx.storage.get("ticket") };
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const role = url.searchParams.get("role");
+    const secret = url.searchParams.get("secret") || "";
+    const [client, server] = Object.values(new WebSocketPair());
+
+    const expected = role === "tv" || role === "remote" ? await this.ctx.storage.get(role === "tv" ? "key" : "ticket") : null;
+    if (!expected || !(await safeEqual(secret, expected))) {
+      // Svar over WebSocket, så nettleseren kan skille «rommet finnes ikke» fra nettverksfeil
+      server.accept();
+      server.close(4001, "Ukjent rom");
+      return new Response(null, { status: 101, webSocket: client });
+    }
+
+    const replaced = role === "tv" ? this.ctx.getWebSockets("tv") : [];
+    this.ctx.acceptWebSocket(server, [role]);
+    for (const ws of replaced) closeSocket(ws, 4002, "Erstattet av en ny tilkobling");
+    this.announce(replaced);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  webSocketMessage(ws, message) {
+    if (typeof message !== "string") return;
+    const fromTv = this.ctx.getTags(ws).includes("tv");
+    for (const peer of this.openSockets(fromTv ? "remote" : "tv")) sendSocket(peer, message);
+  }
+
+  webSocketClose(ws, code, reason) {
+    closeSocket(ws, code === 1005 || code === 1006 ? 1000 : code, reason);
+    this.announce([ws]);
+  }
+
+  webSocketError(ws) {
+    this.announce([ws]);
+  }
+
+  async alarm() {
+    if (this.ctx.getWebSockets().length) await this.ctx.storage.setAlarm(Date.now() + TV_ROOM_TTL);
+    else await this.ctx.storage.deleteAll();
+  }
+
+  openSockets(tag, except = []) {
+    return this.ctx.getWebSockets(tag).filter((ws) => ws.readyState === 1 && !except.includes(ws));
+  }
+
+  /** Forteller alle hvem som er koblet til akkurat nå. */
+  announce(except = []) {
+    const message = JSON.stringify({
+      type: "presence",
+      tv: this.openSockets("tv", except).length > 0,
+      remotes: this.openSockets("remote", except).length,
+    });
+    for (const ws of this.openSockets(undefined, except)) sendSocket(ws, message);
+  }
+}
+
+function sendSocket(ws, message) {
+  try {
+    ws.send(message);
+  } catch {
+    /* forbindelsen er borte */
+  }
+}
+
+function closeSocket(ws, code, reason) {
+  try {
+    ws.close(code, reason);
+  } catch {
+    /* allerede lukket */
+  }
+}
+
 // ---------------------------------------------------------------- albums
 
 async function listAlbums(env, isAdmin, url) {
@@ -149,7 +308,7 @@ async function listAlbums(env, isAdmin, url) {
       cover: a.coverId ? await signedUrl(env, url, a.id, a.coverId, "thumb") : null,
     });
   }
-  return json({ albums: out });
+  return json({ albums: out, tv: !!env.TV }); // tv: nettsiden viser «Vis på TV» bare når API-et støtter det
 }
 
 async function getAlbum(env, albumId, isAdmin, url) {

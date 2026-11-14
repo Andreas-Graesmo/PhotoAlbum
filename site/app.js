@@ -7,6 +7,7 @@ document.body.classList.add("journal");
 
 let albums = [];
 let slideshow = null;
+const tv = createTvLink(() => tokenStore.get()); // fjernstyring av TV-siden (remote.js)
 
 start();
 
@@ -39,7 +40,9 @@ function handleError(err) {
 
 async function loadAlbums(token) {
   try {
-    ({ albums } = await api("/api/albums", { token }));
+    const data = await api("/api/albums", { token });
+    albums = data.albums;
+    tv.supported = !!data.tv; // eldre versjoner av API-et har ikke visning på TV
   } catch (err) {
     return handleError(err);
   }
@@ -148,7 +151,7 @@ async function showAlbum(token) {
   if (photos.length) {
     const slideSection = el("section", { class: "section", id: "lysbilder" }, el("h2", { class: "section-title hand" }, "Alle bilder"));
     main.append(slideSection);
-    slideshow = createSlideshow(slideSection, photos);
+    slideshow = createSlideshow(slideSection, photos, album);
   } else {
     main.append(el("p", { class: "muted center" }, "Dette albumet har ingen bilder ennå."));
   }
@@ -256,13 +259,14 @@ function renderHeader(activeId) {
 
 // ---------------------------------------------------------------- lysbildefremvisning
 
-function createSlideshow(container, photos) {
+function createSlideshow(container, photos, album) {
   let index = 0;
   let timer = null;
   let idleTimer = null;
   let wakeLock = null;
   let wakeLockPending = false;
   let destroyed = false;
+  let tvPlaying = false; // om TV-en blar automatisk (når mobilen er fjernkontroll)
   const INTERVAL = 5000;
   const IDLE_AFTER = 3000;
 
@@ -271,6 +275,10 @@ function createSlideshow(container, photos) {
   const counter = el("span", { class: "stage-counter" });
   const playBtn = el("button", { class: "btn-icon", "aria-label": "Spill av", onclick: () => togglePlay() }, icon("play"));
   const fsBtn = el("button", { class: "btn-icon", "aria-label": "Fullskjerm", onclick: () => toggleFullscreen() }, icon("expand"));
+  const tvBtn = tv.supported
+    ? el("button", { class: "btn-icon tv-btn", "aria-label": "Vis på TV", title: "Vis på TV", onclick: () => onTvClick() }, icon("tv"))
+    : null;
+  const tvStatus = el("p", { class: "tv-status", role: "status", hidden: true });
 
   const stage = el(
     "div",
@@ -293,8 +301,9 @@ function createSlideshow(container, photos) {
   const root = el(
     "div",
     { class: "slideshow", tabindex: "0" },
+    tvStatus,
     stage,
-    el("div", { class: "stage-bar" }, counter, caption, el("div", { class: "stage-controls" }, playBtn, fsBtn)),
+    el("div", { class: "stage-bar" }, counter, caption, el("div", { class: "stage-controls" }, playBtn, tvBtn, fsBtn)),
     strip,
     el("p", { class: "rotate-hint" }, "Snu mobilen på siden for større bilder"),
   );
@@ -398,7 +407,7 @@ function createSlideshow(container, photos) {
     }
   }
 
-  function go(i) {
+  function go(i, fromTv = false) {
     index = (i + photos.length) % photos.length;
     const p = photos[index];
     img.classList.remove("is-loaded");
@@ -417,6 +426,7 @@ function createSlideshow(container, photos) {
       new Image().src = q.src;
     }
     if (timer) restartTimer();
+    if (!fromTv && tv.status === "on") tv.go(index);
   }
 
   function restartTimer() {
@@ -425,16 +435,61 @@ function createSlideshow(container, photos) {
   }
 
   function togglePlay() {
+    if (tv.active) {
+      // Mobilen er fjernkontroll: det er TV-en som blar, og den svarer med ny status
+      if (tv.status === "on") tv.play(!tvPlaying);
+      return;
+    }
     if (timer) {
       clearInterval(timer);
       timer = null;
     } else {
       restartTimer();
     }
-    playBtn.replaceChildren(icon(timer ? "pause" : "play"));
-    playBtn.setAttribute("aria-label", timer ? "Pause" : "Spill av");
-    root.classList.toggle("is-playing", !!timer);
+    showPlaying(!!timer);
     syncWakeLock();
+  }
+
+  function showPlaying(on) {
+    playBtn.replaceChildren(icon(on ? "pause" : "play"));
+    playBtn.setAttribute("aria-label", on ? "Pause" : "Spill av");
+    root.classList.toggle("is-playing", on);
+  }
+
+  // ---- Visning på TV: denne fremvisningen er fjernkontroll så lenge en TV er koblet til
+
+  const TV_STATUS = { connecting: "Kobler til TV-en …", on: "Viser på TV-en", lost: "Får ikke kontakt med TV-en …" };
+
+  const tvTarget = {
+    albumId: album.id,
+    title: album.title,
+    photos,
+    getIndex: () => index,
+    onState({ index: i, playing }) {
+      if (i != null && i !== index && i >= 0 && i < photos.length) go(i, true);
+      tvPlaying = playing;
+      showPlaying(playing);
+    },
+    onStatus(status) {
+      const remote = status !== "off";
+      if (remote && timer) {
+        clearInterval(timer);
+        timer = null;
+        syncWakeLock();
+      }
+      if (status !== "on") tvPlaying = false;
+      showPlaying(remote ? tvPlaying : !!timer);
+      root.classList.toggle("is-remote", remote);
+      tvStatus.hidden = !remote;
+      tvStatus.textContent = TV_STATUS[status] || "";
+      tvBtn?.setAttribute("aria-label", remote ? "Koble fra TV-en" : "Vis på TV");
+      tvBtn?.setAttribute("title", remote ? "Koble fra TV-en" : "Vis på TV");
+    },
+  };
+
+  function onTvClick() {
+    if (!tv.active) openTvDialog(tv);
+    else if (confirm("Koble fra TV-en?")) tv.disconnect();
   }
 
   function isFullscreen() {
@@ -470,7 +525,8 @@ function createSlideshow(container, photos) {
     onFsChange();
   }
 
-  go(0);
+  go(0, true); // ikke flytt TV-en hvis den allerede viser dette albumet
+  tv.attach(tvTarget);
 
   return {
     go,
@@ -479,6 +535,7 @@ function createSlideshow(container, photos) {
       clearInterval(timer);
       clearTimeout(idleTimer);
       destroyed = true;
+      tv.detach(tvTarget);
       syncWakeLock();
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("fullscreenchange", onFsChange);
