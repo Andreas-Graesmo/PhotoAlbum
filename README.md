@@ -56,19 +56,19 @@ Kommandoen skriver ut en adresse som `https://photo-album-api.<konto>.workers.de
 
 ## Bruk
 
-1. Gå til `…/admin.html` og logg inn med admin-passordet.
-2. Lag et album (f.eks. «Sommerferie 2026»).
-3. Trykk **Velg mappe** og velg bildemappen, eller dra mappen inn.
-4. Trykk på ⭐ på bildene som skal være høydepunkter, og dra bildene for å endre rekkefølgen. Trykk på et bilde for å se det større.
+1. Gå til `…/admin.html` og logg inn med admin-passordet. Du kommer til en oversikt over alle albumene. Menyen (☰) øverst til venstre har **Album** og **Brukergrupper**.
+2. Trykk **+ Nytt album** og gi det et navn (f.eks. «Sommerferie 2026»). Trykk på et album i oversikten for å redigere det.
+3. På redigeringssiden er delene lagt sammen. Trykk på en overskrift for å åpne den. Under **Last opp** trykker du **Velg mappe** og velger bildemappen, eller drar mappen inn.
+4. Under **Bilder** trykker du på ⭐ på bildene som skal være høydepunkter, og drar bildene for å endre rekkefølgen. Trykk på et bilde for å se det større.
 5. Velg hvem som skal se albumet under **Hvem kan se albumet** (se *Brukergrupper* under).
 6. Velg et **tema** for albumet, f.eks. Reisedagbok, Storby, Tropisk, Middelhavet, Fjell og hytte, Høst, Jul, 17. mai, Bryllup og fest eller Galleri (20 i alt). Temaet lagres med en gang og endrer bare utseendet.
-7. Huk av **Publisert** og trykk **Lagre**. Nye album er skjult til du publiserer dem.
+7. Under **Innstillinger** huker du av **Publisert** og trykker **Lagre**. Nye album er skjult til du publiserer dem.
 
 ## Brukergrupper (dele album med noen, men ikke alle)
 
 Vil du dele et album med venner uten at de ser de andre albumene, lager du en brukergruppe:
 
-1. Gå til admin og trykk **Brukergrupper** nederst i menyen til venstre.
+1. Gå til admin, åpne menyen (☰) øverst til venstre og trykk **Brukergrupper**.
 2. Gi gruppen et navn (f.eks. «Venner») og et eget passord, og trykk **Lag gruppe**.
 3. Åpne albumet og kryss av for gruppen under **Hvem kan se albumet**. Det lagres med en gang. Albumet må også være **Publisert**.
 4. Gi vennene passordet. De logger inn på albumsiden som vanlig og ser bare albumene som er delt med gruppen deres.
