@@ -1,4 +1,9 @@
-// Admin-siden: lag album, last opp bilder, velg høydepunkter og rekkefølge.
+// Admin-siden: oversikt over album, redigering av album og brukergrupper.
+//
+// Sidene velges med adressen (#):
+//   #            oversikt over alle album
+//   #<albumId>   redigere et album
+//   #grupper     brukergrupper
 
 const adminStore = makeStore("album_admin_token");
 const app = document.getElementById("app");
@@ -7,18 +12,23 @@ document.title = `Admin · ${CONFIG.title}`;
 const FULL_MAX = 2560; // lengste side på stort bilde
 const THUMB_MAX = 640; // lengste side på miniatyr
 const UPLOAD_CONCURRENCY = 3;
+const GROUPS_HASH = "grupper";
 
 let token = adminStore.get();
 let albums = [];
 let groups = null; // null: API-et er for gammelt til å ha brukergrupper
 let currentId = null;
-let view = "album"; // "album" eller "groups"
 let photos = [];
+// Kortene på redigeringssiden er lukket når man åpner et album. De som åpnes, holder seg åpne
+// når samme album tegnes på nytt (f.eks. etter sortering).
+const openPanels = new Set();
+let openPanelsAlbum = null;
 
 if (token) boot();
 else showLogin();
 
 function showLogin() {
+  window.removeEventListener("hashchange", route);
   renderLogin(app, {
     heading: "Admin",
     hint: "Logg inn med admin-passordet.",
@@ -50,11 +60,9 @@ async function boot() {
   } catch {
     return;
   }
-  const fromHash = location.hash.slice(1);
-  currentId = albums.some((a) => a.id === fromHash) ? fromHash : albums[0]?.id || null;
   render();
-  if (fromHash === "grupper") openGroups();
-  else if (currentId) openAlbum(currentId);
+  window.addEventListener("hashchange", route);
+  route();
 }
 
 async function refreshAlbums() {
@@ -70,16 +78,35 @@ async function refreshGroups() {
   }
 }
 
-// ---------------------------------------------------------------- layout
+function go(hash) {
+  if (location.hash.slice(1) === hash) route();
+  else location.hash = hash; // gir et nytt steg i historikken, så tilbakeknappen virker
+}
 
-const sidebar = el("aside", { class: "admin-sidebar" });
-const main = el("section", { class: "admin-main" });
+function route() {
+  const hash = decodeURIComponent(location.hash.slice(1));
+  closeMenu();
+  window.scrollTo(0, 0);
+  if (hash === GROUPS_HASH) openGroups();
+  else if (hash && albums.some((a) => a.id === hash)) openAlbum(hash);
+  else openOverview();
+}
+
+// ---------------------------------------------------------------- layout og meny
+
+const main = el("main", { class: "admin-main" });
+const menuPanel = el("nav", { class: "admin-menu-panel", hidden: true, "aria-label": "Admin-meny" });
+const menuButton = el(
+  "button",
+  { class: "btn-icon", type: "button", title: "Meny", "aria-label": "Meny", "aria-expanded": "false", onclick: () => (menuPanel.hidden ? openMenu() : closeMenu()) },
+  icon("menu"),
+);
 
 function render() {
   const header = el(
     "header",
     { class: "site-header" },
-    el("a", { class: "brand", href: "index.html" }, CONFIG.title),
+    el("div", { class: "admin-menu" }, menuButton, menuPanel),
     el("strong", {}, "Admin"),
     el(
       "button",
@@ -96,31 +123,72 @@ function render() {
       icon("logout"),
     ),
   );
-  renderSidebar();
-  app.replaceChildren(header, el("div", { class: "admin" }, sidebar, main));
-  if (!currentId && view === "album") {
-    main.replaceChildren(
-      el("div", { class: "empty-state" }, el("h1", {}, "Ingen album ennå"), el("p", {}, "Lag ditt første album til venstre.")),
-    );
+  app.replaceChildren(header, main);
+}
+
+function openMenu() {
+  const page = location.hash.slice(1) === GROUPS_HASH ? "groups" : "albums";
+  const item = (label, iconName, hash, active) =>
+    el("a", { class: `menu-item${active ? " is-active" : ""}`, href: `#${hash}`, onclick: (e) => (e.preventDefault(), closeMenu(), go(hash)) }, icon(iconName), el("span", {}, label));
+  menuPanel.replaceChildren(
+    item("Album", "image", "", page === "albums"),
+    item("Brukergrupper", "users", GROUPS_HASH, page === "groups"),
+    el("hr"),
+    el("a", { class: "menu-item", href: "index.html", target: "_blank" }, icon("external"), el("span", {}, "Åpne albumsiden")),
+  );
+  menuPanel.hidden = false;
+  menuButton.setAttribute("aria-expanded", "true");
+  setTimeout(() => document.addEventListener("click", onOutsideClick));
+  document.addEventListener("keydown", onMenuKey);
+}
+
+function closeMenu() {
+  if (menuPanel.hidden) return;
+  menuPanel.hidden = true;
+  menuButton.setAttribute("aria-expanded", "false");
+  document.removeEventListener("click", onOutsideClick);
+  document.removeEventListener("keydown", onMenuKey);
+}
+
+function onOutsideClick(e) {
+  if (!menuPanel.contains(e.target) && !menuButton.contains(e.target)) closeMenu();
+}
+
+function onMenuKey(e) {
+  if (e.key === "Escape") {
+    closeMenu();
+    menuButton.focus();
   }
 }
 
-function renderSidebar() {
-  const list = el("ul", { class: "admin-album-list" });
-  for (const a of albums) {
-    list.append(
-      el(
-        "li",
-        {},
-        el(
-          "button",
-          { class: view === "album" && a.id === currentId ? "is-active" : "", onclick: () => openAlbum(a.id) },
-          el("span", {}, a.title, a.hidden ? el("span", { class: "badge" }, "skjult") : null),
-          el("small", {}, a.count || 0),
-        ),
-      ),
-    );
-  }
+/** Et sammenleggbart kort. `meta` er en kort oppsummering som vises når kortet er lukket. */
+function section(key, title, { meta = null, status = null } = {}, ...body) {
+  const details = el(
+    "details",
+    { class: "panel collapsible", open: openPanels.has(key) },
+    el(
+      "summary",
+      { class: "panel-head" },
+      el("span", { class: "panel-title" }, el("h2", {}, title), meta),
+      el("span", { class: "row" }, status, icon("chevron")),
+    ),
+    el("div", { class: "panel-body" }, body),
+  );
+  details.addEventListener("toggle", () => (details.open ? openPanels.add(key) : openPanels.delete(key)));
+  return details;
+}
+
+function groupNames(album) {
+  if (!groups) return "";
+  const ids = album.groups || ["standard"];
+  return groups.filter((g) => ids.includes(g.id)).map((g) => g.name).join(", ") || "Bare deg";
+}
+
+// ---------------------------------------------------------------- oversikt
+
+function openOverview() {
+  currentId = null;
+  document.title = `Admin · ${CONFIG.title}`;
 
   const title = el("input", { type: "text", placeholder: "F.eks. Sommerferie 2026", required: true, maxlength: "120" });
   const date = el("input", { type: "date", value: new Date().toISOString().slice(0, 10) });
@@ -128,50 +196,82 @@ function renderSidebar() {
   const form = el(
     "form",
     {
-      class: "new-album-form",
+      class: "panel new-album-form",
+      hidden: true,
       onsubmit: async (e) => {
         e.preventDefault();
         err.textContent = "";
         try {
-          const { album } = await call("/api/admin/albums", {
-            method: "POST",
-            body: { title: title.value, date: date.value },
-          });
+          const { album } = await call("/api/admin/albums", { method: "POST", body: { title: title.value, date: date.value } });
           await refreshAlbums();
-          openAlbum(album.id);
+          openPanels.clear();
+          openPanels.add("upload"); // et nytt album trenger bilder først
+          openPanelsAlbum = album.id;
+          go(album.id);
         } catch (e2) {
           err.textContent = e2.message;
         }
       },
     },
-    el("label", {}, "Navn", title),
-    el("label", {}, "Dato", date),
-    el("button", { class: "btn btn-primary", type: "submit" }, "Lag nytt album"),
-    err,
-  );
-
-  const groupsLink = el(
-    "ul",
-    { class: "admin-album-list" },
+    el("div", { class: "panel-head" }, el("h2", {}, "Nytt album")),
     el(
-      "li",
-      {},
+      "div",
+      { class: "form-grid" },
+      el("label", {}, "Navn", title),
+      el("label", {}, "Dato", date),
       el(
-        "button",
-        { class: view === "groups" ? "is-active" : "", onclick: openGroups },
-        el("span", {}, "Brukergrupper"),
-        el("small", {}, groups ? groups.length : ""),
+        "div",
+        { class: "row span-2" },
+        err,
+        el("span", { class: "spacer" }),
+        el("button", { class: "btn", type: "button", onclick: () => (form.hidden = true) }, "Avbryt"),
+        el("button", { class: "btn btn-primary", type: "submit" }, "Lag album"),
       ),
     ),
   );
 
-  sidebar.replaceChildren(
-    el("h2", {}, "Album"),
-    albums.length ? list : el("p", { class: "muted" }, "Ingen album."),
-    el("h2", {}, "Nytt album"),
+  const cards = albums.map((a) =>
+    el(
+      "a",
+      { class: "album-card", href: `#${a.id}` },
+      a.cover ? el("img", { src: a.cover, alt: "", loading: "lazy" }) : el("span", { class: "album-card-empty" }, icon("image")),
+      el(
+        "span",
+        { class: "album-card-body" },
+        el("strong", {}, a.title),
+        el("small", {}, [formatDateRange(a.date, a.dateEnd), `${a.count || 0}\u00a0bilder`].filter(Boolean).join(" · ")),
+        el(
+          "span",
+          { class: "album-card-tags" },
+          el("span", { class: `badge${a.hidden ? "" : " badge-ok"}` }, a.hidden ? "Skjult" : "Publisert"),
+          groups ? el("span", { class: "badge" }, groupNames(a)) : null,
+        ),
+      ),
+    ),
+  );
+
+  main.replaceChildren(
+    el(
+      "div",
+      { class: "page-head" },
+      el("h1", {}, "Album"),
+      el(
+        "button",
+        {
+          class: "btn btn-primary",
+          type: "button",
+          onclick: () => {
+            form.hidden = false;
+            title.focus();
+          },
+        },
+        "+ Nytt album",
+      ),
+    ),
     form,
-    el("h2", { class: "sidebar-gap" }, "Tilgang"),
-    groupsLink,
+    albums.length
+      ? el("div", { class: "album-grid" }, cards)
+      : el("div", { class: "empty-state" }, el("h1", {}, "Ingen album ennå"), el("p", {}, "Trykk «+ Nytt album» for å lage det første.")),
   );
 }
 
@@ -179,10 +279,10 @@ function renderSidebar() {
 
 async function openAlbum(id) {
   currentId = id;
-  view = "album";
-  history.replaceState(null, "", `#${id}`);
-  if (!main.isConnected) render();
-  renderSidebar();
+  if (openPanelsAlbum !== id) {
+    openPanels.clear();
+    openPanelsAlbum = id;
+  }
   main.replaceChildren(el("div", { class: "loading" }, "Laster …"));
   let data;
   try {
@@ -193,26 +293,35 @@ async function openAlbum(id) {
   }
   if (currentId !== id) return;
   photos = data.photos;
+  document.title = `${data.album.title} · Admin`;
   renderAlbum(data.album);
 }
 
 function renderAlbum(album) {
+  const heading = el("h1", {}, album.title);
   const title = el("input", { type: "text", value: album.title, maxlength: "120" });
   const date = el("input", { type: "date", value: album.date || "" });
   const dateEnd = el("input", { type: "date", value: album.dateEnd || "" });
   const desc = el("textarea", { maxlength: "2000", placeholder: "Kort tekst som vises øverst i albumet (valgfritt)" }, album.description || "");
   const published = el("input", { type: "checkbox", checked: !album.hidden });
   const status = el("span", { class: "save-status", role: "status" });
+  const settingsMeta = el("span", { class: "panel-meta" });
+  const showSettingsMeta = () => {
+    settingsMeta.textContent = [album.hidden ? "Skjult" : "Publisert", formatDateRange(album.date, album.dateEnd)].filter(Boolean).join(" · ");
+  };
+  showSettingsMeta();
 
   const save = async () => {
     status.textContent = "Lagrer …";
     try {
-      await call(`/api/admin/albums/${album.id}`, {
+      const res = await call(`/api/admin/albums/${album.id}`, {
         method: "PATCH",
         body: { title: title.value, date: date.value, dateEnd: dateEnd.value, description: desc.value, hidden: !published.checked },
       });
+      Object.assign(album, res.album);
+      heading.textContent = album.title;
+      showSettingsMeta();
       await refreshAlbums();
-      renderSidebar();
       status.textContent = "Lagret ✓";
     } catch (err) {
       status.textContent = "";
@@ -221,8 +330,8 @@ function renderAlbum(album) {
   };
 
   // Tema: lagres med en gang man velger et
-  THEMES.forEach(loadThemeFonts);
   const themeStatus = el("span", { class: "save-status", role: "status" });
+  const themeMeta = el("span", { class: "panel-meta" }, themeById(album.theme).name);
   const themeButtons = THEMES.map((t) =>
     el(
       "button",
@@ -231,7 +340,10 @@ function renderAlbum(album) {
       el("span", { class: "theme-option-name" }, t.name),
     ),
   );
-  const markTheme = (id) => themeButtons.forEach((b, i) => b.setAttribute("aria-pressed", String(THEMES[i] === themeById(id))));
+  const markTheme = (id) => {
+    themeButtons.forEach((b, i) => b.setAttribute("aria-pressed", String(THEMES[i] === themeById(id))));
+    themeMeta.textContent = themeById(id).name;
+  };
   async function pickTheme(t) {
     const previous = album.theme;
     markTheme(t.id);
@@ -248,23 +360,22 @@ function renderAlbum(album) {
       alert(err.message);
     }
   }
-  const themePanel = el(
-    "div",
-    { class: "panel" },
-    el("div", { class: "panel-head" }, el("h2", {}, "Tema"), themeStatus),
+  const themePanel = section(
+    "theme",
+    "Tema",
+    { meta: themeMeta, status: themeStatus },
     el("p", { class: "muted" }, "Velg utseendet albumet skal ha for de som ser på det. Bildene og tekstene er de samme i alle temaer."),
     el("div", { class: "theme-picker" }, themeButtons),
   );
+  // Skriftene til temaene hentes først når kortet åpnes
+  const loadFonts = () => themePanel.open && THEMES.forEach(loadThemeFonts);
+  themePanel.addEventListener("toggle", loadFonts);
+  loadFonts();
 
-  const settings = el(
-    "div",
-    { class: "panel" },
-    el(
-      "div",
-      { class: "panel-head" },
-      el("h2", {}, album.title),
-      el("a", { class: "btn", href: `index.html#/${album.id}`, target: "_blank" }, "Vis album ↗"),
-    ),
+  const settings = section(
+    "settings",
+    "Innstillinger",
+    { meta: settingsMeta, status },
     el(
       "div",
       { class: "form-grid" },
@@ -275,21 +386,19 @@ function renderAlbum(album) {
       el(
         "div",
         { class: "row span-2" },
-        el("label", { class: "check" }, published, "Publisert (synlig for gruppene som er valgt under)"),
+        el("label", { class: "check" }, published, "Publisert (synlig for gruppene under «Hvem kan se albumet»)"),
         el("span", { class: "spacer" }),
-        status,
         el(
           "button",
           {
             class: "btn btn-danger",
+            type: "button",
             onclick: async () => {
               if (!confirm(`Slette «${album.title}» og alle ${photos.length} bilder? Dette kan ikke angres.`)) return;
               try {
                 await call(`/api/admin/albums/${album.id}`, { method: "DELETE" });
                 await refreshAlbums();
-                currentId = albums[0]?.id || null;
-                render();
-                if (currentId) openAlbum(currentId);
+                go("");
               } catch (err) {
                 alert(err.message);
               }
@@ -298,41 +407,36 @@ function renderAlbum(album) {
           icon("trash"),
           "Slett album",
         ),
-        el("button", { class: "btn btn-primary", onclick: save }, "Lagre"),
+        el("button", { class: "btn btn-primary", type: "button", onclick: save }, "Lagre"),
       ),
     ),
   );
 
   const grid = el("div", { class: "photo-grid" });
-  const highlightCount = el("span", { class: "muted" });
-
-  const photosPanel = el(
-    "div",
-    { class: "panel" },
+  const photosMeta = el("span", { class: "panel-meta" });
+  const photosPanel = section(
+    "photos",
+    "Bilder",
+    { meta: photosMeta },
     el(
       "div",
-      { class: "panel-head" },
-      el("h2", {}, "Bilder"),
+      { class: "row panel-tools" },
       el(
-        "div",
-        { class: "row" },
-        highlightCount,
-        el("button", { class: "btn", onclick: () => sortByTime(album) }, "Sorter etter tidspunkt"),
+        "p",
+        { class: "muted" },
+        "Trykk på et bilde for å se det større. Trykk på stjernen for å gjøre det til høydepunkt, og dra bildene for å endre rekkefølgen i lysbildefremvisningen.",
       ),
-    ),
-    el(
-      "p",
-      { class: "muted" },
-      "Trykk på et bilde for å se det større. Trykk på stjernen for å gjøre det til høydepunkt, og dra bildene for å endre rekkefølgen i lysbildefremvisningen.",
+      el("button", { class: "btn", type: "button", onclick: () => sortByTime(album) }, "Sorter etter tidspunkt"),
     ),
     grid,
   );
 
   const storyList = el("div", { class: "story-editor-list" });
-  const storiesPanel = el(
-    "div",
-    { class: "panel" },
-    el("div", { class: "panel-head" }, el("h2", {}, "Tekst til høydepunktene")),
+  const storiesMeta = el("span", { class: "panel-meta" });
+  const storiesPanel = section(
+    "stories",
+    "Tekst til høydepunktene",
+    { meta: storiesMeta },
     el(
       "p",
       { class: "muted" },
@@ -341,12 +445,22 @@ function renderAlbum(album) {
     storyList,
   );
 
-  main.replaceChildren(settings, sharingPanel(album), themePanel, uploadPanel(album, () => drawGrid()), photosPanel, storiesPanel);
+  main.replaceChildren(
+    el("a", { class: "back-link", href: "#", onclick: (e) => (e.preventDefault(), go("")) }, icon("prev"), "Alle album"),
+    el("div", { class: "page-head" }, heading, el("a", { class: "btn", href: `index.html#/${album.id}`, target: "_blank" }, "Vis album ↗")),
+    settings,
+    sharingPanel(album),
+    themePanel,
+    uploadPanel(album, () => drawGrid()),
+    photosPanel,
+    storiesPanel,
+  );
   drawGrid();
 
   function drawGrid() {
     const highlights = photos.filter((p) => p.highlight);
-    highlightCount.textContent = `${highlights.length} høydepunkter · ${photos.length} bilder`;
+    photosMeta.textContent = `${photos.length} bilder · ${highlights.length} høydepunkter`;
+    storiesMeta.textContent = `${highlights.length} høydepunkter`;
     grid.replaceChildren(...photos.map((p) => photoCard(album, p, drawGrid)));
     if (!photos.length) grid.append(el("p", { class: "muted" }, "Ingen bilder ennå."));
     storyList.replaceChildren(...highlights.map((p) => storyEditor(album, p)));
@@ -356,22 +470,19 @@ function renderAlbum(album) {
 
 // ---------------------------------------------------------------- deling og brukergrupper
 
+const OLD_API_MESSAGE = "Brukergrupper krever en nyere versjon av API-et. Publiser Workeren på nytt med «npx wrangler deploy».";
+
 /** Avkrysning for hvilke brukergrupper som får se albumet. Lagres med en gang. */
 function sharingPanel(album) {
   const status = el("span", { class: "save-status", role: "status" });
-  const head = el("div", { class: "panel-head" }, el("h2", {}, "Hvem kan se albumet"), status);
-  if (!groups) {
-    return el(
-      "div",
-      { class: "panel" },
-      head,
-      el("p", { class: "muted" }, "Brukergrupper krever en nyere versjon av API-et. Publiser Workeren på nytt med «npx wrangler deploy»."),
-    );
-  }
+  const meta = el("span", { class: "panel-meta" });
+  if (!groups) return section("sharing", "Hvem kan se albumet", { meta, status }, el("p", { class: "muted" }, OLD_API_MESSAGE));
+
   const selected = new Set(album.groups || ["standard"]);
   const warning = el("p", { class: "muted sharing-warning" });
-  const updateWarning = () => {
+  const update = () => {
     warning.textContent = selected.size ? "" : "Ingen grupper er valgt, så bare du ser albumet.";
+    meta.textContent = groupNames({ groups: [...selected] });
   };
   const boxes = groups.map((g) => {
     const box = el("input", {
@@ -380,7 +491,7 @@ function sharingPanel(album) {
       onchange: async () => {
         if (box.checked) selected.add(g.id);
         else selected.delete(g.id);
-        updateWarning();
+        update();
         status.textContent = "Lagrer …";
         try {
           const res = await call(`/api/admin/albums/${album.id}`, { method: "PATCH", body: { groups: [...selected] } });
@@ -392,7 +503,7 @@ function sharingPanel(album) {
           box.checked = !box.checked;
           if (box.checked) selected.add(g.id);
           else selected.delete(g.id);
-          updateWarning();
+          update();
           status.textContent = "";
           alert(err.message);
         }
@@ -400,16 +511,16 @@ function sharingPanel(album) {
     });
     return el("label", { class: "check" }, box, g.name, g.builtin ? el("span", { class: "badge" }, "fellespassordet") : null);
   });
-  updateWarning();
-  return el(
-    "div",
-    { class: "panel" },
-    head,
+  update();
+  return section(
+    "sharing",
+    "Hvem kan se albumet",
+    { meta, status },
     el(
       "p",
       { class: "muted" },
       "Kryss av for brukergruppene som skal få se albumet når det er publisert. Du som admin ser alltid alle album. ",
-      el("button", { class: "link-btn", type: "button", onclick: openGroups }, "Administrer brukergrupper"),
+      el("a", { class: "link-btn", href: `#${GROUPS_HASH}` }, "Administrer brukergrupper"),
     ),
     el("div", { class: "check-list" }, boxes),
     warning,
@@ -417,10 +528,8 @@ function sharingPanel(album) {
 }
 
 async function openGroups() {
-  view = "groups";
-  history.replaceState(null, "", "#grupper");
-  if (!main.isConnected) render();
-  renderSidebar();
+  currentId = null;
+  document.title = `Brukergrupper · Admin`;
   main.replaceChildren(el("div", { class: "loading" }, "Laster …"));
   try {
     await Promise.all([refreshGroups(), refreshAlbums()]);
@@ -428,21 +537,14 @@ async function openGroups() {
     main.replaceChildren(el("p", { class: "form-error" }, err.message));
     return;
   }
-  if (view !== "groups") return;
-  renderSidebar();
+  if (location.hash.slice(1) !== GROUPS_HASH) return;
   renderGroups();
 }
 
 function renderGroups() {
+  const head = el("div", { class: "page-head" }, el("h1", {}, "Brukergrupper"));
   if (!groups) {
-    main.replaceChildren(
-      el(
-        "div",
-        { class: "panel" },
-        el("div", { class: "panel-head" }, el("h2", {}, "Brukergrupper")),
-        el("p", { class: "muted" }, "Brukergrupper krever en nyere versjon av API-et. Publiser Workeren på nytt med «npx wrangler deploy»."),
-      ),
-    );
+    main.replaceChildren(head, el("div", { class: "panel" }, el("p", { class: "muted" }, OLD_API_MESSAGE)));
     return;
   }
 
@@ -459,7 +561,6 @@ function renderGroups() {
         try {
           await call("/api/admin/groups", { method: "POST", body: { name: name.value, password: password.value } });
           await refreshGroups();
-          renderSidebar();
           renderGroups();
         } catch (e2) {
           err.textContent = e2.message;
@@ -468,22 +569,17 @@ function renderGroups() {
     },
     el("label", {}, "Navn", name),
     el("label", {}, "Passord", password),
-    el("div", { class: "row span-2" }, el("span", { class: "spacer" }), el("button", { class: "btn btn-primary", type: "submit" }, "Lag gruppe")),
-    err,
+    el("div", { class: "row span-2" }, err, el("span", { class: "spacer" }), el("button", { class: "btn btn-primary", type: "submit" }, "Lag gruppe")),
   );
 
   main.replaceChildren(
+    head,
     el(
-      "div",
-      { class: "panel" },
-      el("div", { class: "panel-head" }, el("h2", {}, "Brukergrupper")),
-      el(
-        "p",
-        { class: "muted" },
-        "Hver gruppe har sitt eget passord. De som logger inn på albumsiden med det, ser bare albumene som er delt med gruppen. Du som admin ser alltid alt. Hvilke album en gruppe ser, velger du på hvert album under «Hvem kan se albumet».",
-      ),
-      el("div", { class: "group-list" }, groups.map(groupCard)),
+      "p",
+      { class: "muted page-intro" },
+      "Hver gruppe har sitt eget passord. De som logger inn på albumsiden med det, ser bare albumene som er delt med gruppen. Du som admin ser alltid alt. Hvilke album en gruppe ser, velger du på hvert album under «Hvem kan se albumet».",
     ),
+    el("div", { class: "group-list" }, groups.map(groupCard)),
     el(
       "div",
       { class: "panel" },
@@ -514,7 +610,6 @@ function groupCard(g) {
       Object.assign(g, res.group);
       if (password) password.value = "";
       status.textContent = body.password ? "Nytt passord lagret ✓" : "Lagret ✓";
-      renderSidebar();
     } catch (err) {
       status.textContent = "";
       alert(err.message);
@@ -526,7 +621,6 @@ function groupCard(g) {
     try {
       await call(`/api/admin/groups/${g.id}`, { method: "DELETE" });
       await Promise.all([refreshGroups(), refreshAlbums()]);
-      renderSidebar();
       renderGroups();
     } catch (err) {
       alert(err.message);
@@ -535,7 +629,7 @@ function groupCard(g) {
 
   return el(
     "div",
-    { class: "group-card" },
+    { class: "panel group-card" },
     el(
       "div",
       { class: "form-grid" },
@@ -632,7 +726,7 @@ function photoCard(album, p, redraw) {
           photos = photos.filter((x) => x !== p);
           if (album.coverId === p.id) album.coverId = photos[0]?.id || null;
           redraw();
-          refreshAlbums().then(renderSidebar);
+          refreshAlbums().catch(() => {});
         } catch (err) {
           alert(err.message);
         }
@@ -954,10 +1048,10 @@ function uploadPanel(album, onUploaded) {
     info.textContent =
       (failed ? `${done} lastet opp, ${failed} feilet` : `${done} bilder lastet opp ✓`) +
       (skipped ? ` · ${skipped} andre filer hoppet over` : "");
-    refreshAlbums().then(renderSidebar).catch(() => {});
+    refreshAlbums().catch(() => {});
   }
 
-  return el("div", { class: "panel" }, el("div", { class: "panel-head" }, el("h2", {}, "Last opp")), zone, log);
+  return section("upload", "Last opp", { meta: el("span", { class: "panel-meta" }, "Legg til bilder") }, zone, log);
 }
 
 async function uploadOne(album, file) {
