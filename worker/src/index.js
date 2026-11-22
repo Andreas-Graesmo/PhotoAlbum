@@ -4,11 +4,16 @@
  * Lagring i R2-bøtta (binding PHOTOS):
  *   meta/albums.json                 – liste over album
  *   meta/album-<albumId>.json        – bildene i et album, i visningsrekkefølge
+ *   meta/groups.json                 – brukergrupper (navn + passord-hash)
  *   photos/<albumId>/<photoId>/full  – stort bilde (JPEG, maks ~2560 px)
  *   photos/<albumId>/<photoId>/thumb – miniatyrbilde (JPEG, maks ~640 px)
  *
  * Hemmeligheter: VIEWER_PASSWORD, ADMIN_PASSWORD, TOKEN_SECRET
  * Variabler:     ALLOWED_ORIGINS (kommaseparert)
+ *
+ * Brukergrupper: hver gruppe har sitt eget passord, og hvert album har en liste over gruppene som
+ * får se det (album.groups). Den innebygde gruppen «standard» bruker VIEWER_PASSWORD. Album uten
+ * groups-felt (laget før grupper fantes) vises for standardgruppen. Admin ser alle album.
  *
  * Visning på TV (binding TV, Durable Object TvRoom): TV-siden oppretter et «rom» og viser en
  * firesifret kode. En innlogget mobil kobler seg til rommet med koden og styrer hva TV-en viser.
@@ -18,6 +23,9 @@
 import { DurableObject } from "cloudflare:workers";
 
 const ALBUMS_KEY = "meta/albums.json";
+const GROUPS_KEY = "meta/groups.json";
+const STANDARD_GROUP = "standard";
+const STANDARD_GROUP_NAME = "Fellespassordet";
 const albumKey = (id) => `meta/album-${id}.json`;
 const photoKey = (albumId, photoId, size) => `photos/${albumId}/${photoId}/${size}`;
 
@@ -93,15 +101,23 @@ async function route(request, env) {
 
   if (a === "tv" && b === "pair" && !c && method === "POST") return pairTv(request, env);
 
-  if (a === "session" && method === "GET") return json({ role: session.role });
+  if (a === "session" && method === "GET") return json({ role: session.role, group: session.group || null });
 
   if (a === "albums" && method === "GET") {
-    if (!b) return listAlbums(env, session.role === "admin", url);
-    return getAlbum(env, checkId(b), session.role === "admin", url);
+    if (!b) return listAlbums(env, session, url);
+    return getAlbum(env, checkId(b), session, url);
   }
 
   if (a === "admin") {
     if (session.role !== "admin") throw new HttpError(403, "Krever admin");
+    if (b === "groups") {
+      if (!c && method === "GET") return listGroups(env);
+      if (!c && method === "POST") return createGroup(request, env);
+      const groupId = checkId(c);
+      if (!d && method === "PATCH") return updateGroup(request, env, groupId);
+      if (!d && method === "DELETE") return deleteGroup(env, groupId);
+      throw new HttpError(404, "Finnes ikke");
+    }
     if (b !== "albums") throw new HttpError(404, "Finnes ikke");
 
     if (!c && method === "POST") return createAlbum(request, env);
@@ -127,18 +143,22 @@ async function login(request, env) {
   const { password } = await readBody(request);
   if (typeof password !== "string" || !password) throw new HttpError(400, "Mangler passord");
 
-  let role = null;
-  if (await safeEqual(password, env.ADMIN_PASSWORD)) role = "admin";
-  else if (await safeEqual(password, env.VIEWER_PASSWORD)) role = "viewer";
+  let claims = null;
+  if (await safeEqual(password, env.ADMIN_PASSWORD)) claims = { role: "admin" };
+  else if (await safeEqual(password, env.VIEWER_PASSWORD)) claims = { role: "viewer", group: STANDARD_GROUP };
+  else {
+    const group = await findGroupByPassword(env, password);
+    if (group) claims = { role: "viewer", group: group.id, rev: group.rev };
+  }
 
-  if (!role) {
+  if (!claims) {
     await new Promise((r) => setTimeout(r, 600)); // gjør gjetting tregere
     throw new HttpError(401, "Feil passord");
   }
-  const ttl = role === "admin" ? ADMIN_TOKEN_TTL : VIEWER_TOKEN_TTL;
-  const payload = b64urlEncodeString(JSON.stringify({ role, exp: now() + ttl }));
+  const ttl = claims.role === "admin" ? ADMIN_TOKEN_TTL : VIEWER_TOKEN_TTL;
+  const payload = b64urlEncodeString(JSON.stringify({ ...claims, exp: now() + ttl }));
   const token = `${payload}.${await sign(env, `tok:${payload}`)}`;
-  return json({ token, role });
+  return json({ token, role: claims.role });
 }
 
 async function authenticate(request, env) {
@@ -156,7 +176,130 @@ async function authenticate(request, env) {
     throw new HttpError(401, "Ugyldig innlogging");
   }
   if (!data.exp || data.exp < now()) throw new HttpError(401, "Innloggingen har utløpt");
+  if (data.role === "viewer") {
+    data.group ||= STANDARD_GROUP; // innlogginger fra før grupper fantes
+    if (data.group !== STANDARD_GROUP) {
+      // Slettet gruppe eller nytt passord: medlemmene må logge inn på nytt
+      const { data: groups } = await readJSON(env, GROUPS_KEY, { groups: [] });
+      const group = groups.groups.find((g) => g.id === data.group);
+      if (!group || group.rev !== data.rev) throw new HttpError(401, "Innloggingen gjelder ikke lenger");
+    }
+  }
   return data;
+}
+
+// ---------------------------------------------------------------- brukergrupper
+
+/** Passordene lagres som HMAC med TOKEN_SECRET, så de ikke kan leses ut av R2-bøtta. */
+function passwordHash(env, password) {
+  return sign(env, `pw:${password}`);
+}
+
+async function findGroupByPassword(env, password) {
+  const { data } = await readJSON(env, GROUPS_KEY, { groups: [] });
+  if (!data.groups.length) return null;
+  const hash = await passwordHash(env, password);
+  for (const g of data.groups) {
+    if (await safeEqual(hash, g.hash)) return g;
+  }
+  return null;
+}
+
+/** Alle grupper slik admin ser dem, med standardgruppen først. Hashene sendes aldri ut. */
+function publicGroups(data) {
+  return [
+    { id: STANDARD_GROUP, name: data.standardName || STANDARD_GROUP_NAME, builtin: true },
+    ...data.groups.map(({ id, name, createdAt }) => ({ id, name, createdAt })),
+  ];
+}
+
+async function listGroups(env) {
+  const { data } = await readJSON(env, GROUPS_KEY, { groups: [] });
+  return json({ groups: publicGroups(data) });
+}
+
+async function checkNewPassword(env, password, groups, exceptId) {
+  if (typeof password !== "string" || password.length < 4) throw new HttpError(400, "Passordet må ha minst 4 tegn");
+  if (password.length > 200) throw new HttpError(400, "Passordet er for langt");
+  if ((await safeEqual(password, env.ADMIN_PASSWORD)) || (await safeEqual(password, env.VIEWER_PASSWORD))) {
+    throw new HttpError(400, "Passordet er allerede i bruk");
+  }
+  const hash = await passwordHash(env, password);
+  for (const g of groups) {
+    if (g.id !== exceptId && (await safeEqual(hash, g.hash))) throw new HttpError(400, "Passordet er allerede i bruk av en annen gruppe");
+  }
+  return hash;
+}
+
+async function createGroup(request, env) {
+  const body = await readBody(request);
+  const name = cleanText(body.name, 60);
+  if (!name) throw new HttpError(400, "Gruppen må ha et navn");
+  let group;
+  const data = await updateJSON(env, GROUPS_KEY, { groups: [] }, async (data) => {
+    group = {
+      id: `${slugify(name, "gruppe")}-${randomId(4)}`,
+      name,
+      hash: await checkNewPassword(env, body.password, data.groups),
+      rev: 1,
+      createdAt: new Date().toISOString(),
+    };
+    data.groups.push(group);
+  });
+  return json({ group: publicGroups(data).find((g) => g.id === group.id) }, 201);
+}
+
+async function updateGroup(request, env, groupId) {
+  const body = await readBody(request);
+  const data = await updateJSON(env, GROUPS_KEY, { groups: [] }, async (data) => {
+    const name = "name" in body ? cleanText(body.name, 60) : null;
+    if ("name" in body && !name) throw new HttpError(400, "Gruppen må ha et navn");
+    if (groupId === STANDARD_GROUP) {
+      if ("password" in body) throw new HttpError(400, "Fellespassordet endres med «npx wrangler secret put VIEWER_PASSWORD»");
+      if (name) data.standardName = name;
+      return;
+    }
+    const group = data.groups.find((g) => g.id === groupId);
+    if (!group) throw new HttpError(404, "Gruppen finnes ikke");
+    if (name) group.name = name;
+    if ("password" in body) {
+      group.hash = await checkNewPassword(env, body.password, data.groups, groupId);
+      group.rev = (group.rev || 1) + 1; // logger ut alle som brukte det gamle passordet
+    }
+  });
+  return json({ group: publicGroups(data).find((g) => g.id === groupId) });
+}
+
+async function deleteGroup(env, groupId) {
+  if (groupId === STANDARD_GROUP) throw new HttpError(400, "Standardgruppen kan ikke slettes");
+  await updateJSON(env, GROUPS_KEY, { groups: [] }, (data) => {
+    const before = data.groups.length;
+    data.groups = data.groups.filter((g) => g.id !== groupId);
+    if (data.groups.length === before) throw new HttpError(404, "Gruppen finnes ikke");
+  });
+  await updateJSON(env, ALBUMS_KEY, { albums: [] }, (data) => {
+    for (const a of data.albums) {
+      if (Array.isArray(a.groups)) a.groups = a.groups.filter((id) => id !== groupId);
+    }
+  });
+  return json({ ok: true });
+}
+
+/** Gruppene som får se et album. Album fra før grupper fantes vises for standardgruppen. */
+function albumGroups(album) {
+  return Array.isArray(album.groups) ? album.groups : [STANDARD_GROUP];
+}
+
+function canSee(session, album) {
+  if (session.role === "admin") return true;
+  return !album.hidden && albumGroups(album).includes(session.group);
+}
+
+async function cleanGroups(env, v) {
+  if (!Array.isArray(v)) throw new HttpError(400, "Ugyldige grupper");
+  const { data } = await readJSON(env, GROUPS_KEY, { groups: [] });
+  const known = new Set([STANDARD_GROUP, ...data.groups.map((g) => g.id)]);
+  return [...new Set(v)].filter((id) => typeof id === "string" && known.has(id));
 }
 
 // ---------------------------------------------------------------- visning på TV
@@ -296,24 +439,31 @@ function closeSocket(ws, code, reason) {
 
 // ---------------------------------------------------------------- albums
 
-async function listAlbums(env, isAdmin, url) {
+async function listAlbums(env, session, url) {
   const { data } = await readJSON(env, ALBUMS_KEY, { albums: [] });
   const albums = data.albums
-    .filter((a) => isAdmin || !a.hidden)
+    .filter((a) => canSee(session, a))
     .sort((x, y) => (y.date || "").localeCompare(x.date || ""));
   const out = [];
   for (const a of albums) {
     out.push({
-      ...a,
+      ...publicAlbum(session, a),
       cover: a.coverId ? await signedUrl(env, url, a.id, a.coverId, "thumb") : null,
     });
   }
   return json({ albums: out, tv: !!env.TV }); // tv: nettsiden viser «Vis på TV» bare når API-et støtter det
 }
 
-async function getAlbum(env, albumId, isAdmin, url) {
-  const album = await findAlbum(env, albumId);
-  if (album.hidden && !isAdmin) throw new HttpError(404, "Albumet finnes ikke");
+/** Admin får se hvilke grupper albumet er delt med; de andre trenger ikke vite det. */
+function publicAlbum(session, album) {
+  const { groups, ...rest } = album;
+  return session.role === "admin" ? { ...rest, groups: albumGroups(album) } : rest;
+}
+
+async function getAlbum(env, albumId, session, url) {
+  const found = await findAlbum(env, albumId);
+  if (!canSee(session, found)) throw new HttpError(404, "Albumet finnes ikke");
+  const album = publicAlbum(session, found);
   const { data } = await readJSON(env, albumKey(albumId), { photos: [] });
   const photos = [];
   for (const p of data.photos) {
@@ -345,6 +495,7 @@ async function createAlbum(request, env) {
     description: cleanText(body.description, 2000),
     theme: cleanTheme(body.theme),
     hidden: body.hidden !== false, // nye album er skjult til du publiserer dem
+    groups: "groups" in body ? await cleanGroups(env, body.groups) : [STANDARD_GROUP],
     coverId: null,
     count: 0,
     createdAt: new Date().toISOString(),
@@ -358,6 +509,7 @@ async function createAlbum(request, env) {
 
 async function updateAlbum(request, env, albumId) {
   const body = await readBody(request);
+  const groups = "groups" in body ? await cleanGroups(env, body.groups) : null;
   let updated;
   await updateJSON(env, ALBUMS_KEY, { albums: [] }, (data) => {
     const album = data.albums.find((a) => a.id === albumId);
@@ -373,9 +525,10 @@ async function updateAlbum(request, env, albumId) {
     if ("hidden" in body) album.hidden = !!body.hidden;
     if ("theme" in body) album.theme = cleanTheme(body.theme);
     if ("coverId" in body) album.coverId = body.coverId ? checkId(body.coverId) : null;
+    if (groups) album.groups = groups;
     updated = album;
   });
-  return json({ album: updated });
+  return json({ album: { ...updated, groups: albumGroups(updated) } });
 }
 
 async function deleteAlbum(env, albumId) {
@@ -634,7 +787,7 @@ function randomId(len) {
   return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
 }
 
-function slugify(s) {
+function slugify(s, fallback = "album") {
   return (
     s
       .toLowerCase()
@@ -645,7 +798,7 @@ function slugify(s) {
       .replace(/[̀-ͯ]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
-      .slice(0, 40) || "album"
+      .slice(0, 40) || fallback
   );
 }
 

@@ -10,7 +10,9 @@ const UPLOAD_CONCURRENCY = 3;
 
 let token = adminStore.get();
 let albums = [];
+let groups = null; // null: API-et er for gammelt til å ha brukergrupper
 let currentId = null;
+let view = "album"; // "album" eller "groups"
 let photos = [];
 
 if (token) boot();
@@ -44,18 +46,28 @@ async function call(path, opts = {}) {
 
 async function boot() {
   try {
-    await refreshAlbums();
+    await Promise.all([refreshAlbums(), refreshGroups()]);
   } catch {
     return;
   }
   const fromHash = location.hash.slice(1);
   currentId = albums.some((a) => a.id === fromHash) ? fromHash : albums[0]?.id || null;
   render();
-  if (currentId) openAlbum(currentId);
+  if (fromHash === "grupper") openGroups();
+  else if (currentId) openAlbum(currentId);
 }
 
 async function refreshAlbums() {
   ({ albums } = await call("/api/albums"));
+}
+
+async function refreshGroups() {
+  try {
+    ({ groups } = await call("/api/admin/groups"));
+  } catch (err) {
+    if (err.status !== 404) throw err;
+    groups = null; // eldre versjon av API-et
+  }
 }
 
 // ---------------------------------------------------------------- layout
@@ -86,7 +98,7 @@ function render() {
   );
   renderSidebar();
   app.replaceChildren(header, el("div", { class: "admin" }, sidebar, main));
-  if (!currentId) {
+  if (!currentId && view === "album") {
     main.replaceChildren(
       el("div", { class: "empty-state" }, el("h1", {}, "Ingen album ennå"), el("p", {}, "Lag ditt første album til venstre.")),
     );
@@ -102,7 +114,7 @@ function renderSidebar() {
         {},
         el(
           "button",
-          { class: a.id === currentId ? "is-active" : "", onclick: () => openAlbum(a.id) },
+          { class: view === "album" && a.id === currentId ? "is-active" : "", onclick: () => openAlbum(a.id) },
           el("span", {}, a.title, a.hidden ? el("span", { class: "badge" }, "skjult") : null),
           el("small", {}, a.count || 0),
         ),
@@ -138,13 +150,36 @@ function renderSidebar() {
     err,
   );
 
-  sidebar.replaceChildren(el("h2", {}, "Album"), albums.length ? list : el("p", { class: "muted" }, "Ingen album."), el("h2", {}, "Nytt album"), form);
+  const groupsLink = el(
+    "ul",
+    { class: "admin-album-list" },
+    el(
+      "li",
+      {},
+      el(
+        "button",
+        { class: view === "groups" ? "is-active" : "", onclick: openGroups },
+        el("span", {}, "Brukergrupper"),
+        el("small", {}, groups ? groups.length : ""),
+      ),
+    ),
+  );
+
+  sidebar.replaceChildren(
+    el("h2", {}, "Album"),
+    albums.length ? list : el("p", { class: "muted" }, "Ingen album."),
+    el("h2", {}, "Nytt album"),
+    form,
+    el("h2", { class: "sidebar-gap" }, "Tilgang"),
+    groupsLink,
+  );
 }
 
 // ---------------------------------------------------------------- album-redigering
 
 async function openAlbum(id) {
   currentId = id;
+  view = "album";
   history.replaceState(null, "", `#${id}`);
   if (!main.isConnected) render();
   renderSidebar();
@@ -240,7 +275,7 @@ function renderAlbum(album) {
       el(
         "div",
         { class: "row span-2" },
-        el("label", { class: "check" }, published, "Publisert (synlig for alle med passordet)"),
+        el("label", { class: "check" }, published, "Publisert (synlig for gruppene som er valgt under)"),
         el("span", { class: "spacer" }),
         status,
         el(
@@ -306,7 +341,7 @@ function renderAlbum(album) {
     storyList,
   );
 
-  main.replaceChildren(settings, themePanel, uploadPanel(album, () => drawGrid()), photosPanel, storiesPanel);
+  main.replaceChildren(settings, sharingPanel(album), themePanel, uploadPanel(album, () => drawGrid()), photosPanel, storiesPanel);
   drawGrid();
 
   function drawGrid() {
@@ -317,6 +352,212 @@ function renderAlbum(album) {
     storyList.replaceChildren(...highlights.map((p) => storyEditor(album, p)));
     if (!highlights.length) storyList.append(el("p", { class: "muted" }, "Marker bilder med ⭐ for å skrive tekst til dem."));
   }
+}
+
+// ---------------------------------------------------------------- deling og brukergrupper
+
+/** Avkrysning for hvilke brukergrupper som får se albumet. Lagres med en gang. */
+function sharingPanel(album) {
+  const status = el("span", { class: "save-status", role: "status" });
+  const head = el("div", { class: "panel-head" }, el("h2", {}, "Hvem kan se albumet"), status);
+  if (!groups) {
+    return el(
+      "div",
+      { class: "panel" },
+      head,
+      el("p", { class: "muted" }, "Brukergrupper krever en nyere versjon av API-et. Publiser Workeren på nytt med «npx wrangler deploy»."),
+    );
+  }
+  const selected = new Set(album.groups || ["standard"]);
+  const warning = el("p", { class: "muted sharing-warning" });
+  const updateWarning = () => {
+    warning.textContent = selected.size ? "" : "Ingen grupper er valgt, så bare du ser albumet.";
+  };
+  const boxes = groups.map((g) => {
+    const box = el("input", {
+      type: "checkbox",
+      checked: selected.has(g.id),
+      onchange: async () => {
+        if (box.checked) selected.add(g.id);
+        else selected.delete(g.id);
+        updateWarning();
+        status.textContent = "Lagrer …";
+        try {
+          const res = await call(`/api/admin/albums/${album.id}`, { method: "PATCH", body: { groups: [...selected] } });
+          album.groups = res.album.groups;
+          const listed = albums.find((a) => a.id === album.id);
+          if (listed) listed.groups = res.album.groups;
+          status.textContent = "Lagret ✓";
+        } catch (err) {
+          box.checked = !box.checked;
+          if (box.checked) selected.add(g.id);
+          else selected.delete(g.id);
+          updateWarning();
+          status.textContent = "";
+          alert(err.message);
+        }
+      },
+    });
+    return el("label", { class: "check" }, box, g.name, g.builtin ? el("span", { class: "badge" }, "fellespassordet") : null);
+  });
+  updateWarning();
+  return el(
+    "div",
+    { class: "panel" },
+    head,
+    el(
+      "p",
+      { class: "muted" },
+      "Kryss av for brukergruppene som skal få se albumet når det er publisert. Du som admin ser alltid alle album. ",
+      el("button", { class: "link-btn", type: "button", onclick: openGroups }, "Administrer brukergrupper"),
+    ),
+    el("div", { class: "check-list" }, boxes),
+    warning,
+  );
+}
+
+async function openGroups() {
+  view = "groups";
+  history.replaceState(null, "", "#grupper");
+  if (!main.isConnected) render();
+  renderSidebar();
+  main.replaceChildren(el("div", { class: "loading" }, "Laster …"));
+  try {
+    await Promise.all([refreshGroups(), refreshAlbums()]);
+  } catch (err) {
+    main.replaceChildren(el("p", { class: "form-error" }, err.message));
+    return;
+  }
+  if (view !== "groups") return;
+  renderSidebar();
+  renderGroups();
+}
+
+function renderGroups() {
+  if (!groups) {
+    main.replaceChildren(
+      el(
+        "div",
+        { class: "panel" },
+        el("div", { class: "panel-head" }, el("h2", {}, "Brukergrupper")),
+        el("p", { class: "muted" }, "Brukergrupper krever en nyere versjon av API-et. Publiser Workeren på nytt med «npx wrangler deploy»."),
+      ),
+    );
+    return;
+  }
+
+  const name = el("input", { type: "text", placeholder: "F.eks. Venner", required: true, maxlength: "60" });
+  const password = el("input", { type: "text", placeholder: "Minst 4 tegn", required: true, minlength: "4", maxlength: "200", autocomplete: "off" });
+  const err = el("p", { class: "form-error" });
+  const form = el(
+    "form",
+    {
+      class: "form-grid",
+      onsubmit: async (e) => {
+        e.preventDefault();
+        err.textContent = "";
+        try {
+          await call("/api/admin/groups", { method: "POST", body: { name: name.value, password: password.value } });
+          await refreshGroups();
+          renderSidebar();
+          renderGroups();
+        } catch (e2) {
+          err.textContent = e2.message;
+        }
+      },
+    },
+    el("label", {}, "Navn", name),
+    el("label", {}, "Passord", password),
+    el("div", { class: "row span-2" }, el("span", { class: "spacer" }), el("button", { class: "btn btn-primary", type: "submit" }, "Lag gruppe")),
+    err,
+  );
+
+  main.replaceChildren(
+    el(
+      "div",
+      { class: "panel" },
+      el("div", { class: "panel-head" }, el("h2", {}, "Brukergrupper")),
+      el(
+        "p",
+        { class: "muted" },
+        "Hver gruppe har sitt eget passord. De som logger inn på albumsiden med det, ser bare albumene som er delt med gruppen. Du som admin ser alltid alt. Hvilke album en gruppe ser, velger du på hvert album under «Hvem kan se albumet».",
+      ),
+      el("div", { class: "group-list" }, groups.map(groupCard)),
+    ),
+    el(
+      "div",
+      { class: "panel" },
+      el("div", { class: "panel-head" }, el("h2", {}, "Ny brukergruppe")),
+      el("p", { class: "muted" }, "Gi passordet til dem som skal være med i gruppen. De logger inn på albumsiden som vanlig."),
+      form,
+    ),
+  );
+}
+
+function groupCard(g) {
+  const shared = albums.filter((a) => (a.groups || ["standard"]).includes(g.id));
+  const name = el("input", { type: "text", value: g.name, maxlength: "60" });
+  const password = g.builtin
+    ? null
+    : el("input", { type: "text", placeholder: "Nytt passord (valgfritt)", maxlength: "200", autocomplete: "off" });
+  const status = el("span", { class: "save-status", role: "status" });
+
+  const save = async () => {
+    const body = {};
+    if (name.value.trim() !== g.name) body.name = name.value;
+    if (password?.value) body.password = password.value;
+    if (!Object.keys(body).length) return;
+    if (body.password && !confirm(`Bytte passord for «${g.name}»? Alle som er logget inn med det gamle passordet, blir logget ut.`)) return;
+    status.textContent = "Lagrer …";
+    try {
+      const res = await call(`/api/admin/groups/${g.id}`, { method: "PATCH", body });
+      Object.assign(g, res.group);
+      if (password) password.value = "";
+      status.textContent = body.password ? "Nytt passord lagret ✓" : "Lagret ✓";
+      renderSidebar();
+    } catch (err) {
+      status.textContent = "";
+      alert(err.message);
+    }
+  };
+
+  const remove = async () => {
+    if (!confirm(`Slette gruppen «${g.name}»? De som bruker passordet, mister tilgangen med en gang. Albumene og bildene slettes ikke.`)) return;
+    try {
+      await call(`/api/admin/groups/${g.id}`, { method: "DELETE" });
+      await Promise.all([refreshGroups(), refreshAlbums()]);
+      renderSidebar();
+      renderGroups();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  return el(
+    "div",
+    { class: "group-card" },
+    el(
+      "div",
+      { class: "form-grid" },
+      el("label", {}, "Navn", name),
+      g.builtin
+        ? el("p", { class: "muted group-note" }, "Passordet er VIEWER_PASSWORD hos Cloudflare. Bytt det med «npx wrangler secret put VIEWER_PASSWORD».")
+        : el("label", {}, "Passord", password),
+      el(
+        "p",
+        { class: "muted span-2 group-albums" },
+        shared.length ? `Ser ${shared.length} album: ${shared.map((a) => a.title + (a.hidden ? " (skjult)" : "")).join(", ")}` : "Har ikke tilgang til noen album ennå.",
+      ),
+      el(
+        "div",
+        { class: "row span-2" },
+        el("span", { class: "spacer" }),
+        status,
+        g.builtin ? null : el("button", { class: "btn btn-danger", type: "button", onclick: remove }, icon("trash"), "Slett gruppe"),
+        el("button", { class: "btn btn-primary", type: "button", onclick: save }, "Lagre"),
+      ),
+    ),
+  );
 }
 
 function storyEditor(album, p) {
