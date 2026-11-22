@@ -804,6 +804,36 @@ label {
   display: grid;
   gap: 8px;
 }
+.admin-sidebar h2.sidebar-gap {
+  margin-top: 28px;
+}
+.check-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+}
+.sharing-warning {
+  margin: 12px 0 0;
+  color: var(--accent);
+}
+.group-list {
+  display: grid;
+  gap: 12px;
+}
+.group-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.group-note,
+.group-albums {
+  margin: 0;
+  font-size: 13px;
+}
+.group-note {
+  align-self: end;
+}
 
 .admin-main {
   padding: 24px var(--gutter) 80px;

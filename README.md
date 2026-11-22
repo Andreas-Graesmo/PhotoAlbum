@@ -13,7 +13,7 @@ worker/    API-et (Cloudflare Worker) som sjekker passord og serverer bildene
 
 ## Slik fungerer beskyttelsen
 
-- Besøkende skriver inn **ett felles passord**. Admin-siden krever et **eget admin-passord**.
+- Besøkende skriver inn **ett felles passord**, eller passordet til en **brukergruppe** (se under). Admin-siden krever et **eget admin-passord**.
 - Bildene ligger i en privat R2-bøtte. De kan bare hentes via signerte lenker som Workeren lager etter innlogging, og lenkene utløper etter 1–2 uker.
 - Selve HTML/JS-koden på GitHub Pages er offentlig, men den inneholder ingen bilder eller passord.
 - Bildene krympes i nettleseren før opplasting (maks 2560 px, ca. 0,5–1 MB), så 10 GB gratis lagring rommer rundt 10 000+ bilder.
@@ -60,8 +60,23 @@ Kommandoen skriver ut en adresse som `https://photo-album-api.<konto>.workers.de
 2. Lag et album (f.eks. «Sommerferie 2026»).
 3. Trykk **Velg mappe** og velg bildemappen, eller dra mappen inn.
 4. Trykk på ⭐ på bildene som skal være høydepunkter, og dra bildene for å endre rekkefølgen. Trykk på et bilde for å se det større.
-5. Velg et **tema** for albumet, f.eks. Reisedagbok, Storby, Tropisk, Middelhavet, Fjell og hytte, Høst, Jul, 17. mai, Bryllup og fest eller Galleri (20 i alt). Temaet lagres med en gang og endrer bare utseendet.
-6. Huk av **Publisert** og trykk **Lagre**. Nye album er skjult til du publiserer dem.
+5. Velg hvem som skal se albumet under **Hvem kan se albumet** (se *Brukergrupper* under).
+6. Velg et **tema** for albumet, f.eks. Reisedagbok, Storby, Tropisk, Middelhavet, Fjell og hytte, Høst, Jul, 17. mai, Bryllup og fest eller Galleri (20 i alt). Temaet lagres med en gang og endrer bare utseendet.
+7. Huk av **Publisert** og trykk **Lagre**. Nye album er skjult til du publiserer dem.
+
+## Brukergrupper (dele album med noen, men ikke alle)
+
+Vil du dele et album med venner uten at de ser de andre albumene, lager du en brukergruppe:
+
+1. Gå til admin og trykk **Brukergrupper** nederst i menyen til venstre.
+2. Gi gruppen et navn (f.eks. «Venner») og et eget passord, og trykk **Lag gruppe**.
+3. Åpne albumet og kryss av for gruppen under **Hvem kan se albumet**. Det lagres med en gang. Albumet må også være **Publisert**.
+4. Gi vennene passordet. De logger inn på albumsiden som vanlig og ser bare albumene som er delt med gruppen deres.
+
+- Fellespassordet (`VIEWER_PASSWORD`) er en egen, innebygd gruppe. Album som fantes fra før, er delt med den, akkurat som før. Nye album deles med den til du tar bort krysset.
+- Med admin-passordet ser du alltid alle album, også på albumsiden.
+- Bytter du passordet til en gruppe, eller sletter gruppen, blir alle som brukte det gamle passordet logget ut.
+- Gruppepassordene lagres som en signatur laget med `TOKEN_SECRET`. Bytter du `TOKEN_SECRET`, må du sette nye passord på gruppene.
 
 ## Vise bildene på TV
 
