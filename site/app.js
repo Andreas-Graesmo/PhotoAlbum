@@ -93,21 +93,26 @@ async function showAlbum(token) {
     slideshow.enterFullscreen();
   };
 
-  // Forside: stort bilde med tittel og datoer
+  // Forside: stort bilde med tittel og datoer. Admin velger hvor teksten står (album.heroText),
+  // så den ikke dekker motivet: «<top|middle|bottom>-<left|center|right>» eller «below».
+  const heroText = el(
+    "div",
+    { class: "hero-text" },
+    el("p", { class: "hero-dates hand" }, formatDateRange(album.date, album.dateEnd)),
+    el("h1", { class: "hero-title" }, album.title),
+    el("p", { class: "hero-count" }, `${photos.length} bilder`),
+  );
+  const [textV, textH] = (album.heroText || "bottom-left").split("-");
+  const below = !cover || textV === "below";
   const hero = el(
     "section",
-    { class: `hero${cover ? "" : " hero--plain"}` },
+    { class: `hero${cover ? "" : " hero--plain"}${cover && below ? " hero--below" : ""}`, dataset: below ? {} : { textV, textH } },
     cover ? el("img", { class: "hero-img", src: cover.src, alt: "", fetchpriority: "high" }) : null,
-    el(
-      "div",
-      { class: "hero-text" },
-      el("p", { class: "hero-dates hand" }, formatDateRange(album.date, album.dateEnd)),
-      el("h1", { class: "hero-title" }, album.title),
-      el("p", { class: "hero-count" }, `${photos.length} bilder`),
-    ),
+    cover && below ? null : heroText,
   );
 
   main.replaceChildren(hero);
+  if (cover && below) main.append(el("section", { class: "hero hero--plain hero-under" }, heroText));
   if (album.description) main.append(el("p", { class: "album-desc" }, album.description));
 
   // Høydepunkter: én rad per bilde, annenhver side, med tekst ved siden av

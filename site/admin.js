@@ -412,6 +412,8 @@ function renderAlbum(album) {
     ),
   );
 
+  const hero = heroPanel(album);
+
   const grid = el("div", { class: "photo-grid" });
   const photosMeta = el("span", { class: "panel-meta" });
   const photosPanel = section(
@@ -450,6 +452,7 @@ function renderAlbum(album) {
     el("div", { class: "page-head" }, heading, el("a", { class: "btn", href: `index.html#/${album.id}`, target: "_blank" }, "Vis album ↗")),
     settings,
     sharingPanel(album),
+    hero.node,
     themePanel,
     uploadPanel(album, () => drawGrid()),
     photosPanel,
@@ -465,7 +468,122 @@ function renderAlbum(album) {
     if (!photos.length) grid.append(el("p", { class: "muted" }, "Ingen bilder ennå."));
     storyList.replaceChildren(...highlights.map((p) => storyEditor(album, p)));
     if (!highlights.length) storyList.append(el("p", { class: "muted" }, "Marker bilder med ⭐ for å skrive tekst til dem."));
+    hero.update(); // forsidebildet kan ha blitt byttet
   }
+}
+
+// ---------------------------------------------------------------- forsidebilde
+
+const HERO_TEXT_LABELS = {
+  "top-left": "Øverst til venstre",
+  "top-center": "Øverst i midten",
+  "top-right": "Øverst til høyre",
+  "middle-left": "Midt på, til venstre",
+  "middle-center": "Midt på bildet",
+  "middle-right": "Midt på, til høyre",
+  "bottom-left": "Nederst til venstre",
+  "bottom-center": "Nederst i midten",
+  "bottom-right": "Nederst til høyre",
+  below: "Under bildet",
+};
+const HERO_TEXT_DEFAULT = "bottom-left";
+
+/**
+ * Velg hvor tittelen står på forsidebildet, så den ikke dekker motivet. Viser hvordan forsiden
+ * ser ut på PC og mobil, siden bildet beskjæres forskjellig. Lagres med en gang.
+ */
+function heroPanel(album) {
+  const status = el("span", { class: "save-status", role: "status" });
+  const meta = el("span", { class: "panel-meta" });
+  const previews = el("div", { class: "cover-previews" });
+  const belowLabel = el("label", { class: "check" });
+  let value = album.heroText || HERO_TEXT_DEFAULT;
+
+  const mockText = () =>
+    el(
+      "div",
+      { class: "cover-preview-text" },
+      el("small", {}, formatDateRange(album.date, album.dateEnd)),
+      el("strong", {}, album.title),
+      el("small", { class: "cover-preview-count" }, `${photos.length} bilder`),
+    );
+
+  function preview(cover, kind, label, interactive) {
+    const below = value === "below";
+    const [v, h] = value.split("-");
+    const frame = el(
+      "div",
+      { class: `cover-preview cover-preview--${kind}${below ? " is-below" : ""}`, dataset: below ? {} : { textV: v, textH: h } },
+      el("img", { src: cover.thumb, alt: "" }),
+      below ? null : mockText(),
+    );
+    if (interactive) {
+      const spots = Object.keys(HERO_TEXT_LABELS)
+        .filter((k) => k !== "below")
+        .map((k) =>
+          el("button", {
+            type: "button",
+            class: `cover-spot${k === value ? " is-active" : ""}`,
+            title: HERO_TEXT_LABELS[k],
+            "aria-label": HERO_TEXT_LABELS[k],
+            "aria-pressed": String(k === value),
+            onclick: () => pick(k),
+          }),
+        );
+      frame.append(el("div", { class: "cover-spots" }, spots));
+    }
+    return el("figure", { class: `cover-preview-wrap cover-preview-wrap--${kind}` }, frame, below ? mockText() : null, el("figcaption", {}, label));
+  }
+
+  function update() {
+    meta.textContent = HERO_TEXT_LABELS[value] || "";
+    belowLabel.replaceChildren(
+      el("input", { type: "checkbox", checked: value === "below", onchange: (e) => pick(e.target.checked ? "below" : HERO_TEXT_DEFAULT) }),
+      "Vis teksten under bildet i stedet",
+    );
+    const cover = photos.find((p) => p.id === album.coverId) || photos.find((p) => p.highlight) || photos[0];
+    if (!cover) {
+      previews.replaceChildren(el("p", { class: "muted" }, "Albumet har ingen bilder ennå. Last opp bilder først."));
+      return;
+    }
+    previews.replaceChildren(preview(cover, "wide", "PC – trykk der teksten skal stå", true), preview(cover, "tall", "Mobil", false));
+  }
+
+  async function pick(next) {
+    const previous = value;
+    value = next;
+    update();
+    status.textContent = "Lagrer …";
+    try {
+      const res = await call(`/api/admin/albums/${album.id}`, { method: "PATCH", body: { heroText: next } });
+      // En eldre versjon av API-et kjenner ikke til feltet og lagrer det ikke
+      if ((res.album.heroText || HERO_TEXT_DEFAULT) !== next) throw new Error("Plasseringen ble ikke lagret. API-et (Workeren) må publiseres på nytt først.");
+      album.heroText = next;
+      status.textContent = "Lagret ✓";
+    } catch (err) {
+      value = previous;
+      update();
+      status.textContent = "";
+      alert(err.message);
+    }
+  }
+
+  update();
+  return {
+    update,
+    node: section(
+      "hero",
+      "Forsidebilde",
+      { meta, status },
+      el(
+        "p",
+        { class: "muted" },
+        "Velg hvor tittelen skal stå, så den ikke dekker motivet. Selve forsidebildet velger du under «Bilder» med «Bruk som forside».",
+      ),
+      previews,
+      belowLabel,
+    ),
+  };
 }
 
 // ---------------------------------------------------------------- deling og brukergrupper
