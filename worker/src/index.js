@@ -524,6 +524,7 @@ async function updateAlbum(request, env, albumId) {
     if ("description" in body) album.description = cleanText(body.description, 2000);
     if ("hidden" in body) album.hidden = !!body.hidden;
     if ("theme" in body) album.theme = cleanTheme(body.theme);
+    if ("heroText" in body) album.heroText = cleanHeroText(body.heroText);
     if ("coverId" in body) album.coverId = body.coverId ? checkId(body.coverId) : null;
     if (groups) album.groups = groups;
     updated = album;
@@ -808,6 +809,10 @@ function cleanText(v, max) {
 /** Navnet på utseendet albumet vises med. Selve temaene ligger i nettsiden (THEMES i common.js). */
 function cleanTheme(v) {
   return typeof v === "string" && /^[a-z0-9-]{1,32}$/.test(v) ? v : null;
+}
+/** Hvor tittelen står på forsidebildet: «<top|middle|bottom>-<left|center|right>» eller «below» (under bildet). */
+function cleanHeroText(v) {
+  return typeof v === "string" && /^((top|middle|bottom)-(left|center|right)|below)$/.test(v) ? v : null;
 }
 function cleanDate(v) {
   return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;

@@ -901,6 +901,145 @@ label {
   color: var(--ok);
 }
 
+/* Forhåndsvisning av forsidebildet, med valg av hvor teksten står */
+.cover-previews {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  margin: 16px 0;
+}
+.cover-preview-wrap {
+  margin: 0;
+}
+.cover-preview-wrap--wide {
+  flex: 1 1 300px;
+  max-width: 560px;
+}
+.cover-preview-wrap--tall {
+  width: 130px;
+}
+.cover-preview-wrap figcaption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.cover-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--surface-2);
+  container-type: inline-size;
+}
+.cover-preview--wide {
+  aspect-ratio: 16 / 10;
+}
+.cover-preview--tall {
+  aspect-ratio: 3 / 5;
+}
+.cover-preview img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cover-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(20, 15, 10, 0.72) 0%, rgba(20, 15, 10, 0.2) 45%, transparent 70%);
+}
+.cover-preview[data-text-v="top"]::after {
+  background: linear-gradient(to bottom, rgba(20, 15, 10, 0.72) 0%, rgba(20, 15, 10, 0.2) 45%, transparent 70%);
+}
+.cover-preview[data-text-v="middle"]::after {
+  background: rgba(20, 15, 10, 0.38);
+}
+.cover-preview.is-below::after {
+  display: none;
+}
+.cover-preview-text {
+  display: grid;
+  gap: 0.15em;
+  color: #fff;
+  font-size: 4cqw;
+  line-height: 1.15;
+}
+.cover-preview .cover-preview-text {
+  position: absolute;
+  z-index: 1;
+  inset: auto 0 0;
+  padding: 6cqw;
+}
+.cover-preview--tall .cover-preview-text {
+  font-size: 7cqw;
+}
+.cover-preview-text strong {
+  font: 600 2.2em/1 var(--serif);
+  overflow-wrap: anywhere;
+}
+.cover-preview-text small {
+  font-size: 1em;
+  opacity: 0.9;
+}
+.cover-preview-text .cover-preview-count {
+  font-size: 0.75em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.cover-preview-wrap > .cover-preview-text {
+  margin-top: 8px;
+  color: var(--text);
+}
+.cover-preview[data-text-v="top"] .cover-preview-text {
+  inset: 0 0 auto;
+}
+.cover-preview[data-text-v="middle"] .cover-preview-text {
+  inset: 0;
+  align-content: center;
+}
+.cover-preview[data-text-h="center"] .cover-preview-text {
+  text-align: center;
+  left: 10%;
+  right: 10%;
+}
+.cover-preview--wide[data-text-h="left"] .cover-preview-text {
+  right: 30%;
+}
+.cover-preview--wide[data-text-h="right"] .cover-preview-text {
+  left: 30%;
+}
+.cover-preview[data-text-h="right"] .cover-preview-text {
+  text-align: right;
+}
+.cover-preview--tall[data-text-h] .cover-preview-text {
+  left: 0;
+  right: 0;
+}
+.cover-spots {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+}
+.cover-spot {
+  margin: 4px;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.cover-spot:hover,
+.cover-spot:focus-visible {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+}
+.cover-spot.is-active {
+  border: 2px solid var(--accent);
+}
+
 /* Sammenleggbare kort på redigeringssiden */
 .panel.collapsible {
   margin-bottom: 12px;
@@ -1382,6 +1521,52 @@ body.journal {
   text-transform: uppercase;
   opacity: 0.85;
 }
+/* Plassering av teksten på forsidebildet (album.heroText). Standard er nederst til venstre. */
+.hero[data-text-v="top"] .hero-text {
+  inset: 0 0 auto;
+}
+.hero[data-text-v="top"]::after {
+  background: linear-gradient(to bottom, rgba(var(--hero-shade), 0.72) 0%, rgba(var(--hero-shade), 0.2) 45%, transparent 70%);
+}
+.hero[data-text-v="middle"] .hero-text {
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.hero[data-text-v="middle"]::after {
+  background: rgba(var(--hero-shade), 0.38);
+}
+.hero[data-text-h="center"] .hero-text {
+  text-align: center;
+}
+.hero[data-text-h="right"] .hero-text {
+  text-align: right;
+}
+@media (min-width: 700px) {
+  /* På brede skjermer holder teksten seg på sin side av bildet */
+  .hero[data-text-h="left"] .hero-text {
+    right: 30%;
+  }
+  .hero[data-text-h="right"] .hero-text {
+    left: 30%;
+  }
+  .hero[data-text-h="center"] .hero-text {
+    left: 10%;
+    right: 10%;
+  }
+}
+/* Teksten under bildet: bildet vises uten mørk toning */
+.hero--below {
+  height: min(64vh, 640px); /* lavere, så tittelen under synes uten å rulle */
+}
+.hero--below::after {
+  display: none;
+}
+.hero-under {
+  margin-top: clamp(20px, 4vw, 40px);
+}
+
 .hero--plain {
   height: auto;
   min-height: 0;
@@ -1540,6 +1725,12 @@ body.journal {
   .hero {
     margin-top: 12px;
     height: 70vh;
+  }
+  .hero.hero--below {
+    height: 55vh;
+  }
+  .hero.hero-under {
+    height: auto;
   }
 }
 
