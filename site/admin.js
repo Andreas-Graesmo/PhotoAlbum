@@ -487,6 +487,11 @@ const HERO_TEXT_LABELS = {
   below: "Under bildet",
 };
 const HERO_TEXT_DEFAULT = "bottom-left";
+const HERO_SHOW_OPTIONS = [
+  ["title", "Overskrift"],
+  ["date", "Dato"],
+  ["count", "Antall bilder"],
+];
 const PREVIEW_MIN_RATIO = { wide: 1.5, tall: 0.56 }; // bredde/høyde når forsidebildet når skjermhøyden
 
 /**
@@ -498,16 +503,20 @@ function heroPanel(album) {
   const meta = el("span", { class: "panel-meta" });
   const previews = el("div", { class: "cover-previews" });
   const belowLabel = el("label", { class: "check" });
+  const showRow = el("div", { class: "check-list hero-show" });
   let value = album.heroText || HERO_TEXT_DEFAULT;
+  let show = heroShow(album);
 
   const mockText = () =>
-    el(
-      "div",
-      { class: "cover-preview-text" },
-      el("small", {}, formatDateRange(album.date, album.dateEnd)),
-      el("strong", {}, album.title),
-      el("small", { class: "cover-preview-count" }, `${photos.length} bilder`),
-    );
+    show.length
+      ? el(
+          "div",
+          { class: "cover-preview-text" },
+          show.includes("date") ? el("small", {}, formatDateRange(album.date, album.dateEnd)) : null,
+          show.includes("title") ? el("strong", {}, album.title) : null,
+          show.includes("count") ? el("small", { class: "cover-preview-count" }, `${photos.length} bilder`) : null,
+        )
+      : null;
 
   function preview(cover, kind, label, interactive) {
     const below = value === "below";
@@ -519,7 +528,7 @@ function heroPanel(album) {
     const frame = el(
       "div",
       {
-        class: `cover-preview cover-preview--${kind}${below ? " is-below" : ""}${contain ? " is-contain" : ""}`,
+        class: `cover-preview cover-preview--${kind}${below || !show.length ? " is-below" : ""}${contain ? " is-contain" : ""}`,
         dataset: below ? {} : { textV: v, textH: h },
         style: `aspect-ratio:${frameRatio.toFixed(4)}`,
       },
@@ -546,7 +555,26 @@ function heroPanel(album) {
   }
 
   function update() {
-    meta.textContent = HERO_TEXT_LABELS[value] || "";
+    const shown = HERO_SHOW_OPTIONS.filter(([k]) => show.includes(k)).map(([, label]) => label.toLowerCase());
+    meta.textContent = show.length
+      ? [HERO_TEXT_LABELS[value], show.length < HERO_SHOW_OPTIONS.length ? `bare ${shown.join(" og ")}` : ""].filter(Boolean).join(" · ")
+      : "Uten tekst";
+    showRow.replaceChildren(
+      el("span", { class: "muted" }, "Vis på forsidebildet:"),
+      ...HERO_SHOW_OPTIONS.map(([k, label]) =>
+        el(
+          "label",
+          { class: "check" },
+          el("input", {
+            type: "checkbox",
+            checked: show.includes(k),
+            onchange: (e) => pickShow(e.target.checked ? [...show, k] : show.filter((x) => x !== k)),
+          }),
+          label,
+        ),
+      ),
+    );
+    belowLabel.hidden = !show.length;
     belowLabel.replaceChildren(
       el("input", { type: "checkbox", checked: value === "below", onchange: (e) => pick(e.target.checked ? "below" : HERO_TEXT_DEFAULT) }),
       "Vis teksten under bildet i stedet",
@@ -556,26 +584,38 @@ function heroPanel(album) {
       previews.replaceChildren(el("p", { class: "muted" }, "Albumet har ingen bilder ennå. Last opp bilder først."));
       return;
     }
-    previews.replaceChildren(preview(cover, "wide", "PC – trykk der teksten skal stå", true), preview(cover, "tall", "Mobil", false));
+    const canPlace = show.length > 0;
+    previews.replaceChildren(preview(cover, "wide", canPlace ? "PC – trykk der teksten skal stå" : "PC", canPlace), preview(cover, "tall", "Mobil", false));
   }
 
-  async function pick(next) {
-    const previous = value;
-    value = next;
+  /** Lagrer en endring med en gang, og angrer den i visningen hvis det feiler. */
+  async function save(body, saved, undo) {
     update();
     status.textContent = "Lagrer …";
     try {
-      const res = await call(`/api/admin/albums/${album.id}`, { method: "PATCH", body: { heroText: next } });
-      // En eldre versjon av API-et kjenner ikke til feltet og lagrer det ikke
-      if ((res.album.heroText || HERO_TEXT_DEFAULT) !== next) throw new Error("Plasseringen ble ikke lagret. API-et (Workeren) må publiseres på nytt først.");
-      album.heroText = next;
+      const res = await call(`/api/admin/albums/${album.id}`, { method: "PATCH", body });
+      // En eldre versjon av API-et kjenner ikke til feltene og lagrer dem ikke
+      if (!saved(res.album)) throw new Error("Endringen ble ikke lagret. API-et (Workeren) må publiseres på nytt først.");
+      Object.assign(album, body);
       status.textContent = "Lagret ✓";
     } catch (err) {
-      value = previous;
+      undo();
       update();
       status.textContent = "";
       alert(err.message);
     }
+  }
+
+  function pick(next) {
+    const previous = value;
+    value = next;
+    save({ heroText: next }, (a) => (a.heroText || HERO_TEXT_DEFAULT) === next, () => (value = previous));
+  }
+
+  function pickShow(next) {
+    const previous = show;
+    show = HERO_SHOW_PARTS.filter((p) => next.includes(p));
+    save({ heroShow: show }, (a) => Array.isArray(a.heroShow) && a.heroShow.length === show.length, () => (show = previous));
   }
 
   update();
@@ -588,8 +628,9 @@ function heroPanel(album) {
       el(
         "p",
         { class: "muted" },
-        "Velg hvor tittelen skal stå, så den ikke dekker motivet. Selve forsidebildet velger du under «Bilder» med «Bruk som forside».",
+        "Velg hva som skal stå på forsidebildet, og hvor, så teksten ikke dekker motivet. Selve forsidebildet velger du under «Bilder» med «Bruk som forside».",
       ),
+      showRow,
       previews,
       belowLabel,
     ),

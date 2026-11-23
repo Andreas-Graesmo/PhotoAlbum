@@ -93,28 +93,33 @@ async function showAlbum(token) {
     slideshow.enterFullscreen();
   };
 
-  // Forside: stort bilde med tittel og datoer. Admin velger hvor teksten står (album.heroText),
-  // så den ikke dekker motivet: «<top|middle|bottom>-<left|center|right>» eller «below».
-  const heroText = el(
-    "div",
-    { class: "hero-text" },
-    el("p", { class: "hero-dates hand" }, formatDateRange(album.date, album.dateEnd)),
-    el("h1", { class: "hero-title" }, album.title),
-    el("p", { class: "hero-count" }, `${photos.length} bilder`),
-  );
+  // Forside: stort bilde med tittel og datoer. Admin velger hva som står der (album.heroShow) og hvor
+  // (album.heroText), så teksten ikke dekker motivet: «<top|middle|bottom>-<left|center|right>» eller «below».
+  const show = heroShow(album);
+  const heroText = show.length
+    ? el(
+        "div",
+        { class: "hero-text" },
+        show.includes("date") ? el("p", { class: "hero-dates hand" }, formatDateRange(album.date, album.dateEnd)) : null,
+        // Overskriften er sidens h1 også når den ikke vises på bildet
+        el("h1", { class: show.includes("title") ? "hero-title" : "visually-hidden" }, album.title),
+        show.includes("count") ? el("p", { class: "hero-count" }, `${photos.length} bilder`) : null,
+      )
+    : null;
   const [textV, textH] = (album.heroText || "bottom-left").split("-");
   const below = !cover || textV === "below";
   const ratio = photoRatio(cover);
   const hero = el(
     "section",
     {
-      class: `hero${cover ? "" : " hero--plain"}${cover && below ? " hero--below" : ""}`,
+      class: `hero${cover ? "" : " hero--plain"}${cover && below ? " hero--below" : ""}${heroText ? "" : " hero--no-text"}`,
       dataset: below ? {} : { textV, textH },
       style: cover ? `--hero-ratio:${ratio.toFixed(4)}` : null,
     },
     cover ? el("img", { class: "hero-bg", src: cover.src, alt: "" }) : null,
     cover ? el("img", { class: "hero-img", src: cover.src, alt: "", fetchpriority: "high" }) : null,
     cover && below ? null : heroText,
+    heroText ? null : el("h1", { class: "visually-hidden" }, album.title),
   );
 
   main.replaceChildren(hero);
@@ -126,7 +131,7 @@ async function showAlbum(token) {
     fit();
     if ("ResizeObserver" in window) new ResizeObserver(fit).observe(hero);
   }
-  if (cover && below) main.append(el("section", { class: "hero hero--plain hero-under" }, heroText));
+  if (cover && below && heroText) main.append(el("section", { class: "hero hero--plain hero-under" }, heroText));
   if (album.description) main.append(el("p", { class: "album-desc" }, album.description));
 
   // Høydepunkter: én rad per bilde, annenhver side, med tekst ved siden av

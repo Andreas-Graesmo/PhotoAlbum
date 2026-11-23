@@ -901,7 +901,10 @@ label {
   color: var(--ok);
 }
 
-/* Forhåndsvisning av forsidebildet, med valg av hvor teksten står */
+/* Forhåndsvisning av forsidebildet, med valg av hva som står der og hvor */
+.hero-show {
+  margin-top: 4px;
+}
 .cover-previews {
   display: flex;
   flex-wrap: wrap;
@@ -1607,8 +1610,20 @@ body.journal {
 .hero.hero--below {
   max-height: min(66vh, 660px); /* lavere, så tittelen under synes uten å rulle */
 }
-.hero--below::after {
+.hero--below::after,
+.hero--no-text::after {
   display: none;
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 .hero-under {
   margin-top: clamp(20px, 4vw, 40px);
