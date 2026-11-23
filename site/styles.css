@@ -929,13 +929,9 @@ label {
   overflow: hidden;
   border-radius: 10px;
   background: var(--surface-2);
-  container-type: inline-size;
 }
-.cover-preview--wide {
-  aspect-ratio: 16 / 10;
-}
-.cover-preview--tall {
-  aspect-ratio: 3 / 5;
+.cover-preview {
+  container-type: size;
 }
 .cover-preview img {
   position: absolute;
@@ -943,6 +939,13 @@ label {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.cover-preview.is-contain .cover-preview-img {
+  object-fit: contain;
+}
+.cover-preview-bg {
+  filter: blur(10px) brightness(0.75);
+  transform: scale(1.15);
 }
 .cover-preview::after {
   content: "";
@@ -963,17 +966,17 @@ label {
   display: grid;
   gap: 0.15em;
   color: #fff;
-  font-size: 4cqw;
+  font-size: min(4cqw, 6cqh);
   line-height: 1.15;
 }
 .cover-preview .cover-preview-text {
   position: absolute;
   z-index: 1;
   inset: auto 0 0;
-  padding: 6cqw;
+  padding: min(6cqw, 8cqh);
 }
 .cover-preview--tall .cover-preview-text {
-  font-size: 7cqw;
+  font-size: min(7cqw, 6cqh);
 }
 .cover-preview-text strong {
   font: 600 2.2em/1 var(--serif);
@@ -989,6 +992,7 @@ label {
   text-transform: uppercase;
 }
 .cover-preview-wrap > .cover-preview-text {
+  font-size: 11px;
   margin-top: 8px;
   color: var(--text);
 }
@@ -1480,6 +1484,49 @@ body.journal {
   object-fit: cover;
   animation: hero-zoom 18s ease-out both;
 }
+/* Forsidebildet får bildets egen form (--hero-ratio = bredde/høyde), men aldri høyere enn skjermen */
+.hero:not(.hero--plain) {
+  width: 100%; /* ellers krymper nettleseren bredden for å holde formen når høyden er begrenset */
+  height: auto;
+  min-height: 0;
+  aspect-ratio: var(--hero-ratio, 1.6);
+  max-height: min(82vh, 820px);
+  container-type: size;
+}
+.hero:not(.hero--plain) .hero-img,
+.hero-bg {
+  position: absolute;
+  inset: 0;
+}
+/* Når bildet ellers ville blitt mye beskåret, vises hele bildet foran en uskarp kopi */
+.hero-bg {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(28px) brightness(0.75);
+  transform: scale(1.15);
+}
+.hero--contain .hero-bg {
+  display: block;
+}
+.hero--contain .hero-img {
+  object-fit: contain;
+  animation: none;
+}
+/* Teksten skalerer med høyden på bildet, så den ikke fyller et lavt, liggende bilde på mobil */
+.hero:not(.hero--plain) .hero-text {
+  padding: clamp(14px, min(5vw, 8cqh), 56px);
+}
+.hero:not(.hero--plain) .hero-dates {
+  font-size: calc(clamp(15px, min(3vw, 6cqh), 30px) * var(--hand-scale));
+}
+.hero:not(.hero--plain) .hero-title {
+  font-size: clamp(26px, min(8vw, 14cqh), 92px);
+}
+.hero:not(.hero--plain) .hero-count {
+  margin-top: clamp(4px, 2cqh, 12px);
+}
 @keyframes hero-zoom {
   from {
     transform: scale(1.08);
@@ -1557,8 +1604,8 @@ body.journal {
   }
 }
 /* Teksten under bildet: bildet vises uten mørk toning */
-.hero--below {
-  height: min(64vh, 640px); /* lavere, så tittelen under synes uten å rulle */
+.hero.hero--below {
+  max-height: min(66vh, 660px); /* lavere, så tittelen under synes uten å rulle */
 }
 .hero--below::after {
   display: none;
@@ -1724,13 +1771,6 @@ body.journal {
   }
   .hero {
     margin-top: 12px;
-    height: 70vh;
-  }
-  .hero.hero--below {
-    height: 55vh;
-  }
-  .hero.hero-under {
-    height: auto;
   }
 }
 
@@ -1969,6 +2009,9 @@ body.journal {
 [data-theme="storby"] .hero-title {
   font-size: clamp(56px, 11vw, 136px);
   line-height: 0.92;
+}
+[data-theme="storby"] .hero:not(.hero--plain) .hero-title {
+  font-size: clamp(34px, min(11vw, 18cqh), 136px);
 }
 [data-theme="storby"] .section-title::after {
   content: "";

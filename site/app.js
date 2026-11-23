@@ -104,14 +104,28 @@ async function showAlbum(token) {
   );
   const [textV, textH] = (album.heroText || "bottom-left").split("-");
   const below = !cover || textV === "below";
+  const ratio = photoRatio(cover);
   const hero = el(
     "section",
-    { class: `hero${cover ? "" : " hero--plain"}${cover && below ? " hero--below" : ""}`, dataset: below ? {} : { textV, textH } },
+    {
+      class: `hero${cover ? "" : " hero--plain"}${cover && below ? " hero--below" : ""}`,
+      dataset: below ? {} : { textV, textH },
+      style: cover ? `--hero-ratio:${ratio.toFixed(4)}` : null,
+    },
+    cover ? el("img", { class: "hero-bg", src: cover.src, alt: "" }) : null,
     cover ? el("img", { class: "hero-img", src: cover.src, alt: "", fetchpriority: "high" }) : null,
     cover && below ? null : heroText,
   );
 
   main.replaceChildren(hero);
+  if (cover) {
+    // Rammen følger bildets form, men er begrenset av skjermhøyden. Vis hele bildet hvis det ellers blir mye beskåret.
+    const fit = () => {
+      if (hero.clientHeight) hero.classList.toggle("hero--contain", heroFit(hero.clientWidth / hero.clientHeight, ratio) === "contain");
+    };
+    fit();
+    if ("ResizeObserver" in window) new ResizeObserver(fit).observe(hero);
+  }
   if (cover && below) main.append(el("section", { class: "hero hero--plain hero-under" }, heroText));
   if (album.description) main.append(el("p", { class: "album-desc" }, album.description));
 
