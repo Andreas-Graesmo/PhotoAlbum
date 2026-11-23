@@ -487,6 +487,7 @@ const HERO_TEXT_LABELS = {
   below: "Under bildet",
 };
 const HERO_TEXT_DEFAULT = "bottom-left";
+const PREVIEW_MIN_RATIO = { wide: 1.5, tall: 0.56 }; // bredde/høyde når forsidebildet når skjermhøyden
 
 /**
  * Velg hvor tittelen står på forsidebildet, så den ikke dekker motivet. Viser hvordan forsiden
@@ -511,10 +512,19 @@ function heroPanel(album) {
   function preview(cover, kind, label, interactive) {
     const below = value === "below";
     const [v, h] = value.split("-");
+    // Rammen har bildets form, men aldri høyere enn skjermen: på PC (ca. 1120 × 740) og mobil (ca. 360 × 640)
+    const ratio = photoRatio(cover);
+    const frameRatio = Math.max(ratio, PREVIEW_MIN_RATIO[kind] * (below ? 1.25 : 1));
+    const contain = heroFit(frameRatio, ratio) === "contain";
     const frame = el(
       "div",
-      { class: `cover-preview cover-preview--${kind}${below ? " is-below" : ""}`, dataset: below ? {} : { textV: v, textH: h } },
-      el("img", { src: cover.thumb, alt: "" }),
+      {
+        class: `cover-preview cover-preview--${kind}${below ? " is-below" : ""}${contain ? " is-contain" : ""}`,
+        dataset: below ? {} : { textV: v, textH: h },
+        style: `aspect-ratio:${frameRatio.toFixed(4)}`,
+      },
+      contain ? el("img", { class: "cover-preview-bg", src: cover.thumb, alt: "" }) : null,
+      el("img", { class: "cover-preview-img", src: cover.thumb, alt: "" }),
       below ? null : mockText(),
     );
     if (interactive) {

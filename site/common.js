@@ -172,6 +172,20 @@ function formatDateRange(from, to) {
   return `${a.getDate()}. ${month(a)} – ${b.getDate()}. ${month(b)} ${b.getFullYear()}`;
 }
 
+/**
+ * Forsidebildet får rammen til bildets egen form (liggende eller stående), men aldri høyere enn
+ * skjermen. Blir bildet likevel mye beskåret (f.eks. stående bilde på PC), vises hele bildet med en
+ * uskarp kopi av det bak. Svarer «cover» (fyll rammen) eller «contain» (vis hele bildet).
+ */
+function heroFit(frameRatio, photoRatio) {
+  const crop = 1 - Math.min(frameRatio / photoRatio, photoRatio / frameRatio);
+  return crop > 0.25 ? "contain" : "cover";
+}
+
+function photoRatio(p) {
+  return p && p.w && p.h ? p.w / p.h : 1.6;
+}
+
 /** Viser et innloggingsskjema og kaller onLogin(token, role) ved riktig passord. */
 function renderLogin(root, { heading, hint, requireRole, onLogin }) {
   const input = el("input", {
