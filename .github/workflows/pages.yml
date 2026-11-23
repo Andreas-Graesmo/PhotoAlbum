@@ -15,17 +15,24 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# Opplasting og publisering ligger i hver sin jobb. Når de lå i samme jobb, startet publiseringen
+# noen ganger før GitHub hadde registrert opplastingen, og feilet med «No artifacts named github-pages».
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
