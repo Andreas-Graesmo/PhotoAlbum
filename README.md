@@ -60,7 +60,7 @@ Kommandoen skriver ut en adresse som `https://photo-album-api.<konto>.workers.de
 2. Trykk **+ Nytt album** og gi det et navn (f.eks. «Sommerferie 2026»). Trykk på et album i oversikten for å redigere det.
 3. På redigeringssiden er delene lagt sammen. Trykk på en overskrift for å åpne den. Under **Last opp** trykker du **Velg mappe** og velger bildemappen, eller drar mappen inn.
 4. Under **Bilder** trykker du på ⭐ på bildene som skal være høydepunkter, og drar bildene for å endre rekkefølgen. Trykk på et bilde for å se det større.
-5. Under **Forsidebilde** trykker du der på bildet tittelen skal stå, så den ikke dekker motivet, eller velger at teksten skal stå under bildet. Du ser hvordan det blir på både PC og mobil.
+5. Under **Forsidebilde** velger du hva som skal stå på bildet (overskrift, dato og antall bilder), og trykker der på bildet teksten skal stå, så den ikke dekker motivet, eller velger at teksten skal stå under bildet. Du ser hvordan det blir på både PC og mobil.
 6. Velg hvem som skal se albumet under **Hvem kan se albumet** (se *Brukergrupper* under).
 7. Velg et **tema** for albumet, f.eks. Reisedagbok, Storby, Tropisk, Middelhavet, Fjell og hytte, Høst, Jul, 17. mai, Bryllup og fest eller Galleri (20 i alt). Temaet lagres med en gang og endrer bare utseendet.
 8. Under **Innstillinger** huker du av **Publisert** og trykker **Lagre**. Nye album er skjult til du publiserer dem.

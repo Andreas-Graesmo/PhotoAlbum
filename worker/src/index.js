@@ -525,6 +525,7 @@ async function updateAlbum(request, env, albumId) {
     if ("hidden" in body) album.hidden = !!body.hidden;
     if ("theme" in body) album.theme = cleanTheme(body.theme);
     if ("heroText" in body) album.heroText = cleanHeroText(body.heroText);
+    if ("heroShow" in body) album.heroShow = cleanHeroShow(body.heroShow);
     if ("coverId" in body) album.coverId = body.coverId ? checkId(body.coverId) : null;
     if (groups) album.groups = groups;
     updated = album;
@@ -814,6 +815,12 @@ function cleanTheme(v) {
 function cleanHeroText(v) {
   return typeof v === "string" && /^((top|middle|bottom)-(left|center|right)|below)$/.test(v) ? v : null;
 }
+/** Hva som står på forsidebildet: noen av «title», «date» og «count». null betyr alt (standard). */
+function cleanHeroShow(v) {
+  if (!Array.isArray(v)) return null;
+  return HERO_SHOW_PARTS.filter((part) => v.includes(part));
+}
+const HERO_SHOW_PARTS = ["title", "date", "count"];
 function cleanDate(v) {
   return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
 }

@@ -182,6 +182,12 @@ function heroFit(frameRatio, photoRatio) {
   return crop > 0.25 ? "contain" : "cover";
 }
 
+/** Det som skal stå på forsidebildet (album.heroShow). Mangler feltet, vises alt. */
+const HERO_SHOW_PARTS = ["date", "title", "count"];
+function heroShow(album) {
+  return Array.isArray(album.heroShow) ? HERO_SHOW_PARTS.filter((p) => album.heroShow.includes(p)) : HERO_SHOW_PARTS;
+}
+
 function photoRatio(p) {
   return p && p.w && p.h ? p.w / p.h : 1.6;
 }
